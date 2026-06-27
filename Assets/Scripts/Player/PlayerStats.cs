@@ -11,7 +11,6 @@ public class PlayerStats : MonoBehaviour, IDamageable
     public float CurrentHp => currentHp;
     public bool IsDead => currentHp <= 0f;
 
-    public UnityEvent<float, float> onHpChanged; // currentHp, maxHp
     public UnityEvent onDeath;
 
     private void Awake()
@@ -24,7 +23,6 @@ public class PlayerStats : MonoBehaviour, IDamageable
         if (IsDead) return;
 
         currentHp = Mathf.Max(0f, currentHp - amount);
-        onHpChanged?.Invoke(currentHp, maxHp);
 
         if (IsDead)
             onDeath?.Invoke();
@@ -35,6 +33,5 @@ public class PlayerStats : MonoBehaviour, IDamageable
         if (IsDead) return;
 
         currentHp = Mathf.Min(maxHp, currentHp + amount);
-        onHpChanged?.Invoke(currentHp, maxHp);
     }
 }
