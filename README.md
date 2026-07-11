@@ -53,7 +53,6 @@
 | Language | ![C#](https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=csharp&logoColor=white) | Unity의 기본 스크립팅 언어로, 컴포넌트 기반 구조와 상속을 활용해 적/플레이어 로직을 재사용 가능하게 설계 |
 | 형상 관리 | ![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white) ![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white) | 브랜치 전략과 PR 기반 협업으로 여러 명이 동시에 작업해도 충돌을 최소화 |
 | 코드 리뷰 | ![CodeRabbit](https://img.shields.io/badge/CodeRabbit-FF570A?style=for-the-badge&logo=coderabbit&logoColor=white) | PR마다 자동으로 리뷰를 붙여, 사람 리뷰 전에 명백한 이슈를 먼저 걸러냄 |
-| 디자인 | ![Figma](https://img.shields.io/badge/Figma-F24E1E?style=for-the-badge&logo=figma&logoColor=white) | 아트/UI 작업물을 팀원들과 실시간으로 공유하고 피드백 |
 
 <br>
 
