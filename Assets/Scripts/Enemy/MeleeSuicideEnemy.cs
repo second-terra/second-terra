@@ -13,6 +13,7 @@ public class MeleeSuicideEnemy : MeleeEnemyBase
     [SerializeField] private float selfDetonateDamageMultiplier = 2.5f;
     [SerializeField] private float deathExplodeDamageMultiplier = 0.5f;
     [SerializeField] private float splashDamageToOtherEnemies = EnemyBalance.NormalMeleeDamage;
+    [SerializeField, Range(0f, 1f)] private float explosionChance = 0.5f;
 
     private EnemyState state = EnemyState.Chase;
     private float fuseTimer;
@@ -57,6 +58,12 @@ public class MeleeSuicideEnemy : MeleeEnemyBase
 
     private void Explode(float playerDamage)
     {
+        if (Random.value > explosionChance)
+        {
+            Debug.Log("[자폭형] 불발...");
+            return;
+        }
+
         if (playerDamageable != null && HasPlayer && DistToPlayer() <= explosionRadius)
             playerDamageable.TakeDamage(playerDamage);
 

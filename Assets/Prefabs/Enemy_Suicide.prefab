@@ -197,8 +197,8 @@ GameObject:
   - component: {fileID: 6058854475472878523}
   - component: {fileID: 6738559310379929803}
   - component: {fileID: 8571173470072079581}
-  - component: {fileID: 1963851049220441396}
   - component: {fileID: 3883720577737987524}
+  - component: {fileID: 1963851049220441396}
   m_Layer: 0
   m_Name: Enemy_Suicide
   m_TagString: Untagged
@@ -301,32 +301,6 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
---- !u!114 &1963851049220441396
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4839504289188104254}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 783720a402a704c76a6d222951c7ccf5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxHp: 100
-  attackDamage: 10
-  moveSpeed: 3
-  attackRange: 1.5
-  detectionRange: 8
-  attackCooldown: 1.5
-  hitFlashDuration: 0.1
-  speedMultiplier: 1.4
-  contactRange: 0.8
-  explosionRadius: 1.5
-  fuseDelay: 0.6
-  selfDetonateDamageMultiplier: 2.5
-  deathExplodeDamageMultiplier: 0.5
-  splashDamageToOtherEnemies: 10
 --- !u!58 &3883720577737987524
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -362,6 +336,33 @@ CircleCollider2D:
   m_Offset: {x: 0, y: 0}
   serializedVersion: 2
   m_Radius: 0.5
+--- !u!114 &1963851049220441396
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4839504289188104254}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 783720a402a704c76a6d222951c7ccf5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHp: 100
+  attackDamage: 10
+  moveSpeed: 3
+  attackRange: 1.5
+  detectionRange: 8
+  attackCooldown: 1.5
+  hitFlashDuration: 0.1
+  speedMultiplier: 1.4
+  contactRange: 0.8
+  explosionRadius: 1.5
+  fuseDelay: 0.6
+  selfDetonateDamageMultiplier: 2.5
+  deathExplodeDamageMultiplier: 0.5
+  splashDamageToOtherEnemies: 10
+  explosionChance: 0.5
 --- !u!1 &8151568639603843784
 GameObject:
   m_ObjectHideFlags: 0
@@ -372,8 +373,6 @@ GameObject:
   m_Component:
   - component: {fileID: 4452598571335688199}
   - component: {fileID: 4265844387493506066}
-  - component: {fileID: 2050238026438218510}
-  - component: {fileID: 8637093374371412028}
   - component: {fileID: 2665439776259354024}
   - component: {fileID: 2672257541130879189}
   m_Layer: 0
@@ -427,46 +426,6 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 10
   m_TargetDisplay: 0
---- !u!114 &2050238026438218510
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8151568639603843784}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_UiScaleMode: 0
-  m_ReferencePixelsPerUnit: 100
-  m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 800, y: 600}
-  m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0
-  m_PhysicalUnit: 3
-  m_FallbackScreenDPI: 96
-  m_DefaultSpriteDPI: 96
-  m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 0
---- !u!114 &8637093374371412028
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8151568639603843784}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_IgnoreReversedGraphics: 1
-  m_BlockingObjects: 0
-  m_BlockingMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
 --- !u!114 &2665439776259354024
 MonoBehaviour:
   m_ObjectHideFlags: 0
