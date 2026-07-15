@@ -1,13 +1,13 @@
 using UnityEngine;
 
-public class MeleeNormalEnemy : MeleeEnemyBase
+public abstract class MeleeNormalEnemyBase : MeleeEnemyBase
 {
-    private enum EnemyState { Chase, Attack }
+    protected enum EnemyState { Chase, Attack }
 
     [SerializeField] private float rotationSpeed = 10f;
     [SerializeField] private float attackExitMargin = 1.1f;
 
-    private EnemyState state = EnemyState.Chase;
+    protected EnemyState state = EnemyState.Chase;
     private float lastAttackTime = -99f;
 
     private void Update()
@@ -36,6 +36,7 @@ public class MeleeNormalEnemy : MeleeEnemyBase
         }
 
         FaceTarget();
+        UpdateMovementWhileAttacking();
 
         if (Time.time - lastAttackTime >= attackCooldown)
         {
@@ -43,6 +44,8 @@ public class MeleeNormalEnemy : MeleeEnemyBase
             PerformAttack(playerDamageable);
         }
     }
+
+    protected abstract void UpdateMovementWhileAttacking();
 
     private void FaceTarget()
     {

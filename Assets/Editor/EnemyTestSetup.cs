@@ -25,12 +25,13 @@ public static class EnemyTestSetup
             return;
         }
 
-        CreateEnemy<MeleeNormalEnemy>("Enemy_Normal", new Vector3(4f, 2f, 0f), new Color(0.9f, 0.2f, 0.2f));
+        CreateEnemy<MeleeNormalStationaryEnemy>("Enemy_Normal", new Vector3(4f, 2f, 0f), new Color(0.9f, 0.2f, 0.2f));
+        CreateEnemy<MeleeNormalMovingEnemy>("Enemy_Normal_Moving", new Vector3(2f, 4f, 0f), new Color(1f, 0.4f, 0.7f));
         CreateEnemy<MeleeSuicideEnemy>("Enemy_Suicide", new Vector3(-4f, 2f, 0f), new Color(1f, 0.55f, 0f));
         CreateEnemy<MeleeDashEnemy>("Enemy_Dash", new Vector3(0f, -3f, 0f), new Color(1f, 0.9f, 0.1f));
 
         EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
-        Debug.Log("[EnemyTestSetup] 테스트용 적 3종 생성/갱신 완료. File > Save로 씬 저장하세요.");
+        Debug.Log("[EnemyTestSetup] 테스트용 적 4종 생성/갱신 완료. File > Save로 씬 저장하세요.");
     }
 
     private static void CreateEnemy<T>(string name, Vector3 position, Color color) where T : Component
