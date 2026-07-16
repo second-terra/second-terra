@@ -62,6 +62,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     public void TakeDamage(float amount)
     {
         if (isDead) return;
+        amount = Mathf.Max(0f, amount);
 
         currentHp = Mathf.Max(0f, currentHp - amount);
         OnHealthChanged?.Invoke(currentHp, maxHp);
@@ -74,6 +75,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     public void Heal(float amount)
     {
         if (isDead) return;
+        amount = Mathf.Max(0f, amount);
 
         currentHp = Mathf.Min(maxHp, currentHp + amount);
         OnHealthChanged?.Invoke(currentHp, maxHp);
