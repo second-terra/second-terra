@@ -12,7 +12,11 @@ public abstract class MeleeNormalEnemyBase : MeleeEnemyBase
 
     private void Update()
     {
-        if (isDead || !HasPlayer) return;
+        if (isDead || !HasPlayer)
+        {
+            StopMoving();
+            return;
+        }
 
         switch (state)
         {
