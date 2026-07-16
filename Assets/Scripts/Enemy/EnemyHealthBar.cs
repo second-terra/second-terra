@@ -19,7 +19,8 @@ public class EnemyHealthBar : MonoBehaviour
     {
         if (worldCanvas == null || mainCam == null) return;
 
-        worldCanvas.transform.position = transform.position + Vector3.up * yOffset;
+        Transform followTarget = transform.parent != null ? transform.parent : transform;
+        worldCanvas.transform.position = followTarget.position + Vector3.up * yOffset;
         worldCanvas.transform.forward = mainCam.transform.forward;
     }
 
@@ -34,6 +35,6 @@ public class EnemyHealthBar : MonoBehaviour
     private void SetVisible(bool visible)
     {
         if (worldCanvas != null)
-            worldCanvas.gameObject.SetActive(visible);
+            worldCanvas.enabled = visible;
     }
 }
