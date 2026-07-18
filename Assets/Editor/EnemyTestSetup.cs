@@ -16,6 +16,92 @@ public static class EnemyTestSetup
         EditorApplication.isPlaying = false;
     }
 
+    [MenuItem("Tools/Second Terra/Setup Player Health Bar")]
+    public static void SetupPlayerHealthBar()
+    {
+        if (Application.isPlaying)
+        {
+            Debug.LogWarning("[EnemyTestSetup] Play 모드 중에는 실행할 수 없습니다.");
+            return;
+        }
+
+        // 기존 PlayerHUD 캔버스가 있으면 제거 후 재생성
+        var existing = GameObject.Find("PlayerHUD");
+        if (existing != null)
+        {
+            Undo.DestroyObjectImmediate(existing);
+        }
+
+        // Screen Space - Overlay 캔버스 생성
+        var canvasGo = new GameObject("PlayerHUD");
+        Undo.RegisterCreatedObjectUndo(canvasGo, "Create PlayerHUD");
+
+        var canvas = canvasGo.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 100;
+        canvasGo.AddComponent<UnityEngine.UI.CanvasScaler>();
+        canvasGo.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+
+        // 체력바 루트 오브젝트
+        var hpBarRoot = new GameObject("HpBar");
+        hpBarRoot.transform.SetParent(canvasGo.transform, false);
+        var rootRect = hpBarRoot.AddComponent<RectTransform>();
+        rootRect.anchorMin = new Vector2(0f, 1f);
+        rootRect.anchorMax = new Vector2(0f, 1f);
+        rootRect.pivot = new Vector2(0f, 1f);
+        rootRect.anchoredPosition = new Vector2(20f, -20f);
+        rootRect.sizeDelta = new Vector2(300f, 30f);
+
+        // 배경
+        var bgGo = new GameObject("Background");
+        bgGo.transform.SetParent(hpBarRoot.transform, false);
+        var bgImage = bgGo.AddComponent<UnityEngine.UI.Image>();
+        bgImage.color = new Color(0f, 0f, 0f, 0.6f);
+        SetFullRect(bgImage.rectTransform);
+
+        // Fill Area
+        var fillAreaGo = new GameObject("Fill Area");
+        fillAreaGo.transform.SetParent(hpBarRoot.transform, false);
+        var fillAreaRect = fillAreaGo.AddComponent<RectTransform>();
+        fillAreaRect.anchorMin = Vector2.zero;
+        fillAreaRect.anchorMax = Vector2.one;
+        fillAreaRect.offsetMin = new Vector2(2, 2);
+        fillAreaRect.offsetMax = new Vector2(-2, -2);
+
+        // Fill
+        var fillGo = new GameObject("Fill");
+        fillGo.transform.SetParent(fillAreaGo.transform, false);
+        var fillImage = fillGo.AddComponent<UnityEngine.UI.Image>();
+        fillImage.color = new Color(0.9f, 0.15f, 0.15f);
+        SetFullRect(fillImage.rectTransform);
+
+        // Slider
+        var slider = hpBarRoot.AddComponent<UnityEngine.UI.Slider>();
+        slider.interactable = false;
+        slider.transition = UnityEngine.UI.Selectable.Transition.None;
+        slider.fillRect = fillImage.rectTransform;
+        slider.handleRect = null;
+        slider.direction = UnityEngine.UI.Slider.Direction.LeftToRight;
+        slider.minValue = 0f;
+        slider.maxValue = 1f;
+        slider.value = 1f;
+
+        // PlayerHealthBar 컴포넌트
+        var healthBar = hpBarRoot.AddComponent<PlayerHealthBar>();
+        var so = new SerializedObject(healthBar);
+        so.FindProperty("hpSlider").objectReferenceValue = slider;
+
+        // PlayerStats 자동 연결
+        var playerStats = Object.FindFirstObjectByType<PlayerStats>();
+        if (playerStats != null)
+            so.FindProperty("playerStats").objectReferenceValue = playerStats;
+
+        so.ApplyModifiedPropertiesWithoutUndo();
+
+        EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+        Debug.Log("[EnemyTestSetup] 플레이어 체력바 생성 완료. File > Save로 씬 저장하세요.");
+    }
+
     [MenuItem("Tools/Second Terra/Create Test Enemies")]
     public static void CreateTestEnemies()
     {
