@@ -62,6 +62,9 @@ public class GreatSword : MonoBehaviour
     [SerializeField] private float crushEnhanceMinCastFactor = 0.5f; // 강화+에너지100 시 시전시간 배율(2s→1s)
     [SerializeField] private Color crushColor = new Color(0.7f, 0.4f, 0.15f); // 분쇄 히트박스 색(갈색)
 
+    [Header("개발용 화면 표시 (테스트용, 정식 UI는 김세원님)")]
+    [SerializeField] private bool showDebugHUD = true;
+
     private Transform Aim => firePoint != null ? firePoint : transform;
 
     private int comboIndex;          // 0=좌횡, 1=우횡, 2=회전
@@ -83,9 +86,23 @@ public class GreatSword : MonoBehaviour
         Color.yellow,
     };
 
+    // ===== UI 노출용 (김세원님 UI에서 읽어감) =====
+    // 에너지
     public float MaxEnergy => maxEnergy;
     public float CurrentEnergy => currentEnergy;
-    public bool IsEnhanced => isEnhanced;
+    public float EnergyRatio => maxEnergy > 0f ? currentEnergy / maxEnergy : 0f; // 0~1 (바 채움용)
+    public bool IsEnhanced => isEnhanced;                                        // 강화 대기 중?
+
+    // 방출(3) 쿨타임: 남은 초 / 0~1 비율(1=방금 씀, 0=준비됨) / 준비 여부
+    public float ReleaseCooldownRemaining => Mathf.Max(0f, lastReleaseTime + releaseCooldown - Time.time);
+    public float ReleaseCooldownRatio => releaseCooldown > 0f ? Mathf.Clamp01(ReleaseCooldownRemaining / releaseCooldown) : 0f;
+    public bool IsReleaseReady => Time.time >= lastReleaseTime + releaseCooldown;
+
+    // 분쇄(4) 쿨타임
+    public float CrushCooldownRemaining => Mathf.Max(0f, lastCrushTime + crushCooldown - Time.time);
+    public float CrushCooldownRatio => crushCooldown > 0f ? Mathf.Clamp01(CrushCooldownRemaining / crushCooldown) : 0f;
+    public bool IsCrushReady => Time.time >= lastCrushTime + crushCooldown;
+    // =========================================
 
     private void Awake()
     {
@@ -368,6 +385,24 @@ public class GreatSword : MonoBehaviour
             if (hit.TryGetComponent<IDamageable>(out var target) && !target.IsDead)
                 target.TakeDamage(damage);
         }
+    }
+
+    // 개발용 화면 표시 (테스트로 에너지/쿨타임 눈으로 확인. 정식 UI는 김세원님)
+    private void OnGUI()
+    {
+        if (!showDebugHUD) return;
+
+        var style = new GUIStyle(GUI.skin.label) { fontSize = 20 };
+        style.normal.textColor = Color.white;
+
+        string text =
+            $"[대검]\n" +
+            $"에너지: {currentEnergy:F0} / {maxEnergy:F0}\n" +
+            $"강화: {(isEnhanced ? "ON" : "-")}\n" +
+            $"방출 쿨: {ReleaseCooldownRemaining:F1}s\n" +
+            $"분쇄 쿨: {CrushCooldownRemaining:F1}s";
+
+        GUI.Label(new Rect(14, 12, 400, 220), text, style);
     }
 
     // 씬 뷰에서 히트박스 확인용
