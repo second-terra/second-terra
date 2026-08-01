@@ -1,10 +1,10 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 // 대검. "에너지" 자원(최대 100) 운용.
-// 평타 3연격 + 에너지 충전 + 강화 + 방출(전방 사각형) + 분쇄(찍기 연타).
-// (방어는 이후 단계에서 추가)
+// 평타 3연격 + 에너지 충전 + 강화 + 방어(패링) + 방출(전방 사각형) + 분쇄(찍기 연타).
 public class GreatSword : MonoBehaviour
 {
     [Header("참조")]
@@ -36,6 +36,16 @@ public class GreatSword : MonoBehaviour
     [SerializeField] private float enhanceDamageMultiplier = 2f;  // 강화 시 피해 배율
     [SerializeField] private float enhanceCastMultiplier = 0.5f;  // 강화 시 시전 딜레이 배율(짧아짐)
     [SerializeField] private Color enhancedColor = Color.magenta; // 강화된 공격 히트박스 색
+
+    [Header("방어 (2번 키)")]
+    [SerializeField] private KeyCode defendKey = KeyCode.Alpha2;
+    [SerializeField] private float defendDuration = 1.5f;   // 패링 판정 시간
+    [SerializeField] private float defendCooldown = 2f;
+    [SerializeField] private float defendEnergyGain = 20f;  // 패링 성공 시 충전량
+    [SerializeField] private float defendSpeedMultiplier = 1f; // 시전 중 이동속도 배율(1=제한 없음)
+    [SerializeField] private Color defendColor = new Color(0.3f, 0.8f, 1f);   // 방어 자세 링(하늘)
+    [SerializeField] private Color parrySuccessColor = Color.white;           // 패링 성공 링
+    [SerializeField] private float defendRingRadius = 1.2f;
 
     [Header("방출 (3번 키)")]
     [SerializeField] private KeyCode releaseKey = KeyCode.Alpha3;
@@ -78,6 +88,13 @@ public class GreatSword : MonoBehaviour
     private float lastReleaseTime = -999f; // 방출 쿨타임 기준
     private float lastCrushTime = -999f;   // 분쇄 쿨타임 기준
 
+    private PlayerStats stats;             // 피해 가로채기 훅(DamageInterceptor) 등록용
+    private PlayerController controller;   // 시전 중 이동속도 조절용
+    private Func<float, bool> interceptor; // 등록한 훅 참조 (해제할 때 내 것인지 확인용)
+    private bool isDefending;              // 패링 판정 창이 열려 있는지
+    private float lastDefendTime = -999f;  // 방어 쿨타임 기준
+    private float prevSpeedMultiplier = 1f; // 방어 시전 전 이동속도 배율 (복구용)
+
     // 콤보 단계별 히트박스 색 (1타 파랑 / 2타 하늘 / 3타 노랑)
     private static readonly Color[] comboColors =
     {
@@ -98,6 +115,12 @@ public class GreatSword : MonoBehaviour
     public float ReleaseCooldownRatio => releaseCooldown > 0f ? Mathf.Clamp01(ReleaseCooldownRemaining / releaseCooldown) : 0f;
     public bool IsReleaseReady => Time.time >= lastReleaseTime + releaseCooldown;
 
+    // 방어(2) 쿨타임 + 패링 판정 중 여부
+    public bool IsDefending => isDefending;
+    public float DefendCooldownRemaining => Mathf.Max(0f, lastDefendTime + defendCooldown - Time.time);
+    public float DefendCooldownRatio => defendCooldown > 0f ? Mathf.Clamp01(DefendCooldownRemaining / defendCooldown) : 0f;
+    public bool IsDefendReady => Time.time >= lastDefendTime + defendCooldown;
+
     // 분쇄(4) 쿨타임
     public float CrushCooldownRemaining => Mathf.Max(0f, lastCrushTime + crushCooldown - Time.time);
     public float CrushCooldownRatio => crushCooldown > 0f ? Mathf.Clamp01(CrushCooldownRemaining / crushCooldown) : 0f;
@@ -107,6 +130,12 @@ public class GreatSword : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        stats = GetComponent<PlayerStats>();
+        controller = GetComponent<PlayerController>();
+        interceptor = InterceptDamage;
+
+        if (stats == null)
+            Debug.LogWarning("[GreatSword] PlayerStats를 찾지 못해 방어(패링)가 동작하지 않습니다. 같은 오브젝트에 있는지 확인하세요.");
 
         // 히트박스 시각화 컴포넌트 자동 확보 (없으면 붙임)
         visualizer = GetComponent<SwingVisualizer>();
@@ -114,11 +143,35 @@ public class GreatSword : MonoBehaviour
             visualizer = gameObject.AddComponent<SwingVisualizer>();
     }
 
+    // 패링용 피해 가로채기 훅 등록/해제.
+    // 무기 교체 시 컴포넌트가 켜지고 꺼지므로 여기서 붙였다 떼는 게 안전하다.
+    private void OnEnable()
+    {
+        if (stats != null)
+            stats.DamageInterceptor = interceptor;
+
+        // 비활성화되면 진행 중이던 코루틴이 중단되어 행동 잠금이 남을 수 있으므로 여기서 푼다
+        isAttacking = false;
+    }
+
+    private void OnDisable()
+    {
+        // 내가 등록한 훅일 때만 해제 (다른 무기가 이미 덮어썼으면 건드리지 않음)
+        if (stats != null && stats.DamageInterceptor == interceptor)
+            stats.DamageInterceptor = null;
+
+        EndDefend();
+    }
+
     private void Update()
     {
         // 강화 (1번 키): 다음 행동을 강화
         if (Input.GetKeyDown(enhanceKey))
             TryEnhance();
+
+        // 방어 (2번 키)
+        if (Input.GetKeyDown(defendKey))
+            TryDefend();
 
         // 방출 (3번 키)
         if (Input.GetKeyDown(releaseKey))
@@ -257,6 +310,81 @@ public class GreatSword : MonoBehaviour
         }
         energy = 0f;
         return false;
+    }
+
+    // 방어: 다음 피해를 막아낸다. 패링 판정 1.5초, 성공 시 즉시 시전 종료 + 에너지 충전. 쿨타임 2초.
+    private void TryDefend()
+    {
+        if (isAttacking) return;
+        if (Time.time < lastDefendTime + defendCooldown)
+        {
+            Debug.Log($"[GreatSword] 방어 쿨타임 {lastDefendTime + defendCooldown - Time.time:F1}초 남음");
+            return;
+        }
+        StartCoroutine(DefendRoutine());
+    }
+
+    private IEnumerator DefendRoutine()
+    {
+        isAttacking = true;
+        isDefending = true;
+        lastDefendTime = Time.time;   // 쿨타임은 시전 시작 기준 (방출/분쇄와 동일)
+
+        if (controller != null)
+        {
+            prevSpeedMultiplier = controller.SpeedMultiplier;
+            controller.SpeedMultiplier = defendSpeedMultiplier;
+        }
+
+        Debug.Log($"[GreatSword] 방어 시전 (판정 {defendDuration:F1}초)");
+
+        float endTime = Time.time + defendDuration;
+
+        // 판정 창이 열려 있는 동안 유지. InterceptDamage가 패링에 성공하면 isDefending을 내려서 즉시 빠져나온다.
+        while (isDefending && Time.time < endTime)
+        {
+            // SwingVisualizer의 표시는 짧게 사라지므로 매 프레임 갱신해 지속 표시처럼 보이게 한다
+            if (visualizer != null)
+                visualizer.FlashCircle(transform.position, defendRingRadius, defendColor);
+
+            yield return null;
+        }
+
+        if (isDefending)
+            Debug.Log("[GreatSword] 방어 종료 (막아낸 피해 없음)");
+
+        EndDefend();
+        isAttacking = false;
+    }
+
+    // 방어 상태 정리 (판정 종료 / 패링 성공 / 컴포넌트 비활성화 공통)
+    private void EndDefend()
+    {
+        // 방어 중이 아닐 때 호출되면(중복 호출·비활성화 등) 아무것도 하지 않는다.
+        // 이 가드가 없으면 다른 시스템이 조절 중인 이동속도까지 덮어쓴다.
+        if (!isDefending) return;
+
+        isDefending = false;
+
+        if (controller != null)
+            controller.SpeedMultiplier = prevSpeedMultiplier;
+    }
+
+    // PlayerStats.TakeDamage에서 호출되는 훅. true를 반환하면 그 피해는 무시된다.
+    private bool InterceptDamage(float amount)
+    {
+        if (!isDefending) return false;
+
+        // 패링 성공: 판정 창을 닫아 시전을 끝내고(DefendRoutine이 다음 프레임에 빠져나오며 행동 잠금 해제),
+        // 에너지를 충전한다.
+        EndDefend();
+        AddEnergy(defendEnergyGain);
+
+        if (visualizer != null)
+            visualizer.FlashCircle(transform.position, defendRingRadius, parrySuccessColor);
+
+        Debug.Log($"[GreatSword] 패링 성공! 피해 {amount} 무효화, 에너지 +{defendEnergyGain} (현재 {currentEnergy})");
+        return true;
     }
 
     // 방출: 1.6초 시전 후 전방 직사각형 범위 피해. 쿨타임 6초.
@@ -399,6 +527,7 @@ public class GreatSword : MonoBehaviour
             $"[대검]\n" +
             $"에너지: {currentEnergy:F0} / {maxEnergy:F0}\n" +
             $"강화: {(isEnhanced ? "ON" : "-")}\n" +
+            $"방어: {(isDefending ? "판정 중" : "-")} (쿨 {DefendCooldownRemaining:F1}s)\n" +
             $"방출 쿨: {ReleaseCooldownRemaining:F1}s\n" +
             $"분쇄 쿨: {CrushCooldownRemaining:F1}s";
 
