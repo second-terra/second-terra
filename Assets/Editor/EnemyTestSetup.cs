@@ -120,6 +120,148 @@ public static class EnemyTestSetup
         Debug.Log("[EnemyTestSetup] 테스트용 적 4종 생성/갱신 완료. File > Save로 씬 저장하세요.");
     }
 
+    [MenuItem("Tools/Second Terra/Create Test Boss - Sector1")]
+    public static void CreateTestBossSector1()
+    {
+        if (Application.isPlaying)
+        {
+            Debug.LogWarning("[EnemyTestSetup] Play 모드 중에는 실행할 수 없습니다. 정지 후 다시 실행하세요.");
+            return;
+        }
+
+        var projectilePrefab = GetOrCreateEnemyProjectilePrefab();
+
+        CreateEnemy<Sector1Boss>("Boss_Sector1", new Vector3(0f, -6f, 0f), new Color(0.75f, 0.75f, 0.78f));
+
+        var boss = GameObject.Find("Boss_Sector1");
+        var so = new SerializedObject(boss.GetComponent<Sector1Boss>());
+        so.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        SavePrefab(boss, "Boss_Sector1");
+
+        EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+        Debug.Log("[EnemyTestSetup] 1섹터 보스 테스트 생성 완료. File > Save로 씬 저장하세요.");
+    }
+
+    [MenuItem("Tools/Second Terra/Create Test Boss - Sector2")]
+    public static void CreateTestBossSector2()
+    {
+        if (Application.isPlaying)
+        {
+            Debug.LogWarning("[EnemyTestSetup] Play 모드 중에는 실행할 수 없습니다. 정지 후 다시 실행하세요.");
+            return;
+        }
+
+        var projectilePrefab = GetOrCreateEnemyProjectilePrefab();
+
+        CreateEnemy<Sector2Boss>("Boss_Sector2", new Vector3(0f, -8f, 0f), new Color(0.2f, 0.2f, 0.22f));
+
+        var boss = GameObject.Find("Boss_Sector2");
+        var so = new SerializedObject(boss.GetComponent<Sector2Boss>());
+        so.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        SavePrefab(boss, "Boss_Sector2");
+
+        EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+        Debug.Log("[EnemyTestSetup] 2섹터 보스 테스트 생성 완료. File > Save로 씬 저장하세요.");
+    }
+
+    [MenuItem("Tools/Second Terra/Create Test Boss - Sector3")]
+    public static void CreateTestBossSector3()
+    {
+        if (Application.isPlaying)
+        {
+            Debug.LogWarning("[EnemyTestSetup] Play 모드 중에는 실행할 수 없습니다. 정지 후 다시 실행하세요.");
+            return;
+        }
+
+        var summonedAddsPrefab = GetOrCreateSummonedAddsPrefab();
+        var trailProjectilePrefab = GetOrCreateTrailProjectilePrefab();
+
+        CreateEnemy<Sector3Boss>("Boss_Sector3", new Vector3(0f, -10f, 0f), new Color(0.07f, 0.07f, 0.08f));
+
+        var boss = GameObject.Find("Boss_Sector3");
+        var so = new SerializedObject(boss.GetComponent<Sector3Boss>());
+        so.FindProperty("summonedAddsPrefab").objectReferenceValue = summonedAddsPrefab;
+        so.FindProperty("trailProjectilePrefab").objectReferenceValue = trailProjectilePrefab;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        SavePrefab(boss, "Boss_Sector3");
+
+        EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+        Debug.Log("[EnemyTestSetup] 3섹터 보스 테스트 생성 완료. File > Save로 씬 저장하세요.");
+    }
+
+    private static GameObject GetOrCreateSummonedAddsPrefab()
+    {
+        string path = $"{PrefabFolder}/SummonedAdds.prefab";
+        var existingAsset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (existingAsset != null)
+            return existingAsset;
+
+        CreateEnemy<SummonedAdds>("SummonedAdds", new Vector3(0f, -10.5f, 0f), new Color(0.55f, 0.6f, 0.35f));
+        return AssetDatabase.LoadAssetAtPath<GameObject>(path);
+    }
+
+    private static GameObject GetOrCreateTrailProjectilePrefab()
+    {
+        string path = $"{PrefabFolder}/TrailProjectile.prefab";
+        var existingAsset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (existingAsset != null)
+            return existingAsset;
+
+        var go = new GameObject("TrailProjectile");
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = GetPlaceholderSprite();
+        sr.color = new Color(0.3f, 0.9f, 0.3f);
+        go.transform.localScale = Vector3.one * 0.25f;
+
+        var rb = go.AddComponent<Rigidbody2D>();
+        rb.gravityScale = 0f;
+
+        var col = go.AddComponent<CircleCollider2D>();
+        col.isTrigger = true;
+        col.radius = 0.4f;
+
+        go.AddComponent<TrailProjectile>();
+
+        if (!AssetDatabase.IsValidFolder(PrefabFolder))
+            AssetDatabase.CreateFolder("Assets", "Prefabs");
+
+        var savedAsset = PrefabUtility.SaveAsPrefabAsset(go, path);
+        Object.DestroyImmediate(go);
+        return savedAsset;
+    }
+
+    private static GameObject GetOrCreateEnemyProjectilePrefab()
+    {
+        string path = $"{PrefabFolder}/EnemyProjectile.prefab";
+        var existingAsset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (existingAsset != null)
+            return existingAsset;
+
+        var go = new GameObject("EnemyProjectile");
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = GetPlaceholderSprite();
+        sr.color = new Color(0.7f, 0.2f, 1f);
+        go.transform.localScale = Vector3.one * 0.3f;
+
+        var rb = go.AddComponent<Rigidbody2D>();
+        rb.gravityScale = 0f;
+
+        var col = go.AddComponent<CircleCollider2D>();
+        col.isTrigger = true;
+        col.radius = 0.5f;
+
+        go.AddComponent<EnemyProjectile>();
+
+        if (!AssetDatabase.IsValidFolder(PrefabFolder))
+            AssetDatabase.CreateFolder("Assets", "Prefabs");
+
+        var savedAsset = PrefabUtility.SaveAsPrefabAsset(go, path);
+        Object.DestroyImmediate(go);
+        return savedAsset;
+    }
+
     private static void CreateEnemy<T>(string name, Vector3 position, Color color) where T : Component
     {
         var existing = GameObject.Find(name);
