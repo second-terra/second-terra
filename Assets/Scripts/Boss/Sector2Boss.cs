@@ -67,24 +67,32 @@ public class Sector2Boss : BossBase
             closeTimer = 0f;
     }
 
+    // 한 방이 현재 갑피 단계를 깨고 남을 만큼 크면, 남은 피해를 다음 단계로 계속 흘려보낸다
+    // (예전엔 armorPool이 음수여도 다음 단계에서 그냥 꽉 채워버려서 초과분이 사라졌음).
     protected override float ModifyIncomingDamage(float amount)
     {
-        if (armorStage >= ArmorStageExposed)
-            return amount * exposedDamageMultiplier;
+        float remaining = amount;
+        float coreDamage = 0f;
 
-        float armorRatio = armorStage == ArmorStageIntact ? intactArmorAbsorbRatio : damagedArmorAbsorbRatio;
-        float armorDamage = amount * armorRatio;
-        float coreDamage = amount * (1f - armorRatio);
-
-        armorPool -= armorDamage;
-        if (armorPool <= 0f)
+        while (remaining > 0f && armorStage < ArmorStageExposed)
         {
-            armorStage++;
-            armorPool = armorMaxPool;
-            UpdateArmorVisual();
+            float armorRatio = armorStage == ArmorStageIntact ? intactArmorAbsorbRatio : damagedArmorAbsorbRatio;
+            float incomingToBreak = armorPool / Mathf.Max(armorRatio, Mathf.Epsilon);
+            float appliedIncoming = Mathf.Min(remaining, incomingToBreak);
+
+            armorPool -= appliedIncoming * armorRatio;
+            coreDamage += appliedIncoming * (1f - armorRatio);
+            remaining -= appliedIncoming;
+
+            if (armorPool <= Mathf.Epsilon)
+            {
+                armorStage++;
+                armorPool = armorStage < ArmorStageExposed ? armorMaxPool : 0f;
+                UpdateArmorVisual();
+            }
         }
 
-        return coreDamage;
+        return coreDamage + remaining * exposedDamageMultiplier;
     }
 
     private void UpdateArmorVisual()
