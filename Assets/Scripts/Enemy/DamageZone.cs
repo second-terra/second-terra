@@ -23,6 +23,10 @@ public class DamageZone : MonoBehaviour
         sr.color = new Color(1f, 0.2f, 0.2f, 0.35f);
         transform.localScale = Vector3.one * radius * 2f;
 
+        // tickInterval이 0 이하면 지속형 루프의 elapsed가 안 늘어나서 영원히 안 끝남 -> 최소값 보정.
+        if (activeDuration > 0f)
+            tickInterval = Mathf.Max(tickInterval, 0.05f);
+
         StartCoroutine(Sequence(telegraphDuration, activeDuration, tickInterval));
     }
 
