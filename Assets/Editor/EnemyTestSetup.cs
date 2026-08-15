@@ -111,16 +111,44 @@ public static class EnemyTestSetup
             return;
         }
 
-        CreateEnemy<MeleeNormalStationaryEnemy>("Enemy_Normal", new Vector3(4f, 2f, 0f), new Color(0.9f, 0.2f, 0.2f));
-        CreateEnemy<MeleeNormalMovingEnemy>("Enemy_Normal_Moving", new Vector3(2f, 4f, 0f), new Color(1f, 0.4f, 0.7f));
-        CreateEnemy<MeleeSuicideEnemy>("Enemy_Suicide", new Vector3(-4f, 2f, 0f), new Color(1f, 0.55f, 0f));
-        CreateEnemy<MeleeDashEnemy>("Enemy_Dash", new Vector3(0f, -3f, 0f), new Color(1f, 0.9f, 0.1f));
+        var normal = CreateEnemy<MeleeNormalStationaryEnemy>("Enemy_Normal", new Vector3(4f, 2f, 0f), new Color(0.9f, 0.2f, 0.2f));
+        SavePrefab(normal, "Enemy_Normal");
+
+        var normalMoving = CreateEnemy<MeleeNormalMovingEnemy>("Enemy_Normal_Moving", new Vector3(2f, 4f, 0f), new Color(1f, 0.6f, 0.75f));
+        SavePrefab(normalMoving, "Enemy_Normal_Moving");
+
+        var suicide = CreateEnemy<MeleeSuicideEnemy>("Enemy_Suicide", new Vector3(-4f, 2f, 0f), new Color(1f, 0.55f, 0f));
+        SavePrefab(suicide, "Enemy_Suicide");
+
+        var dash = CreateEnemy<MeleeDashEnemy>("Enemy_Dash", new Vector3(0f, -3f, 0f), new Color(1f, 0.9f, 0.1f));
+        SavePrefab(dash, "Enemy_Dash");
+
+        var enemyProjectilePrefab = GetOrCreateEnemyProjectilePrefab();
+
+        var barrageRandomRadial = CreateEnemy<RangedBarrageEnemy>("Enemy_Barrage_RandomRadial", new Vector3(6f, -1f, 0f), new Color(0.05f, 0.4f, 0.1f));
+        ConfigureBarrage(barrageRandomRadial, RangedBarrageEnemy.AimMode.Random, RangedBarrageEnemy.FirePattern.Radial, enemyProjectilePrefab);
+        SavePrefab(barrageRandomRadial, "Enemy_Barrage_RandomRadial");
+
+        var barrageMoveStraight = CreateEnemy<RangedBarrageEnemy>("Enemy_Barrage_MoveStraight", new Vector3(-6f, -1f, 0f), new Color(0.6f, 0.95f, 0.6f));
+        ConfigureBarrage(barrageMoveStraight, RangedBarrageEnemy.AimMode.PlayerMoveDirection, RangedBarrageEnemy.FirePattern.Straight, enemyProjectilePrefab);
+        SavePrefab(barrageMoveStraight, "Enemy_Barrage_MoveStraight");
+
+        var beam = CreateEnemy<RangedBeamEnemy>("Enemy_Beam", new Vector3(0f, 5f, 0f), new Color(0.1f, 0.4f, 0.95f));
+        SavePrefab(beam, "Enemy_Beam");
+
+        var zoneRandom = CreateEnemy<RangedZoneEnemy>("Enemy_Zone_Random", new Vector3(6f, 3f, 0f), new Color(0.55f, 0.15f, 0.85f));
+        ConfigureZone(zoneRandom, RangedZoneEnemy.ZoneLocation.RandomArea);
+        SavePrefab(zoneRandom, "Enemy_Zone_Random");
+
+        var zoneAroundPlayer = CreateEnemy<RangedZoneEnemy>("Enemy_Zone_AroundPlayer", new Vector3(-6f, 3f, 0f), new Color(0.8f, 0.65f, 0.95f));
+        ConfigureZone(zoneAroundPlayer, RangedZoneEnemy.ZoneLocation.AroundPlayer);
+        SavePrefab(zoneAroundPlayer, "Enemy_Zone_AroundPlayer");
 
         EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
-        Debug.Log("[EnemyTestSetup] 테스트용 적 4종 생성/갱신 완료. File > Save로 씬 저장하세요.");
+        Debug.Log("[EnemyTestSetup] 테스트용 적 9종(근접 4 + 원거리 5) 생성/갱신 완료. File > Save로 씬 저장하세요.");
     }
 
-    private static void CreateEnemy<T>(string name, Vector3 position, Color color) where T : Component
+    private static GameObject CreateEnemy<T>(string name, Vector3 position, Color color) where T : Component
     {
         var existing = GameObject.Find(name);
         if (existing != null)
@@ -136,8 +164,7 @@ public static class EnemyTestSetup
             if (existing.GetComponent<Collider2D>() == null)
                 AddTriggerCollider(existing);
 
-            SavePrefab(existing, name);
-            return;
+            return existing;
         }
 
         var go = new GameObject(name);
@@ -156,7 +183,67 @@ public static class EnemyTestSetup
         AddHealthBar(go);
 
         Selection.activeGameObject = go;
-        SavePrefab(go, name);
+        return go;
+    }
+
+    private static GameObject GetOrCreateEnemyProjectilePrefab()
+    {
+        string path = $"{PrefabFolder}/EnemyProjectile.prefab";
+        var existingAsset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (existingAsset != null)
+            return existingAsset;
+
+        var go = new GameObject("EnemyProjectile");
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = GetPlaceholderSprite();
+        sr.color = new Color(0.7f, 0.2f, 1f);
+        go.transform.localScale = Vector3.one * 0.3f;
+
+        var rb = go.AddComponent<Rigidbody2D>();
+        rb.gravityScale = 0f;
+
+        var col = go.AddComponent<CircleCollider2D>();
+        col.isTrigger = true;
+        col.radius = 0.5f;
+
+        go.AddComponent<EnemyProjectile>();
+
+        if (!AssetDatabase.IsValidFolder(PrefabFolder))
+            AssetDatabase.CreateFolder("Assets", "Prefabs");
+
+        var savedAsset = PrefabUtility.SaveAsPrefabAsset(go, path);
+        Object.DestroyImmediate(go);
+        return savedAsset;
+    }
+
+    private static void ConfigureBarrage(GameObject go, RangedBarrageEnemy.AimMode aimMode, RangedBarrageEnemy.FirePattern firePattern, GameObject projectilePrefab)
+    {
+        var component = go.GetComponent<RangedBarrageEnemy>();
+        if (component == null)
+        {
+            Debug.LogWarning($"[EnemyTestSetup] '{go.name}'에 RangedBarrageEnemy 컴포넌트가 없어 설정을 건너뜁니다.");
+            return;
+        }
+
+        var so = new SerializedObject(component);
+        so.FindProperty("aimMode").enumValueIndex = (int)aimMode;
+        so.FindProperty("firePattern").enumValueIndex = (int)firePattern;
+        so.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
+        so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    private static void ConfigureZone(GameObject go, RangedZoneEnemy.ZoneLocation zoneLocation)
+    {
+        var component = go.GetComponent<RangedZoneEnemy>();
+        if (component == null)
+        {
+            Debug.LogWarning($"[EnemyTestSetup] '{go.name}'에 RangedZoneEnemy 컴포넌트가 없어 설정을 건너뜁니다.");
+            return;
+        }
+
+        var so = new SerializedObject(component);
+        so.FindProperty("zoneLocation").enumValueIndex = (int)zoneLocation;
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     private static void SavePrefab(GameObject go, string name)
