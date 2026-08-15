@@ -16,6 +16,36 @@ public static class EnemyTestSetup
         EditorApplication.isPlaying = false;
     }
 
+    [MenuItem("Tools/Second Terra/Setup Player Collider")]
+    public static void SetupPlayerCollider()
+    {
+        if (Application.isPlaying)
+        {
+            Debug.LogWarning("[EnemyTestSetup] Play 모드 중에는 실행할 수 없습니다.");
+            return;
+        }
+
+        var playerStats = Object.FindFirstObjectByType<PlayerStats>();
+        if (playerStats == null)
+        {
+            Debug.LogWarning("[EnemyTestSetup] 씬에서 PlayerStats를 찾지 못했습니다.");
+            return;
+        }
+
+        var player = playerStats.gameObject;
+        if (player.GetComponent<Collider2D>() != null)
+        {
+            Debug.Log("[EnemyTestSetup] Player에 이미 Collider2D가 있습니다.");
+            return;
+        }
+
+        var col = Undo.AddComponent<CircleCollider2D>(player);
+        col.radius = 0.5f;
+
+        EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+        Debug.Log("[EnemyTestSetup] Player에 CircleCollider2D 추가 완료. File > Save로 씬 저장하세요.");
+    }
+
     [MenuItem("Tools/Second Terra/Setup Player Health Bar")]
     public static void SetupPlayerHealthBar()
     {
