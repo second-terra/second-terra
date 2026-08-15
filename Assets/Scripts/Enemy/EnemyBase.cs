@@ -19,6 +19,9 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     protected float currentHp;
     protected bool isDead;
 
+    protected Transform playerTransform;
+    protected IDamageable playerDamageable;
+
     private SpriteRenderer spriteRenderer;
     private Color originalColor;
     private Coroutine flashCoroutine;
@@ -57,7 +60,26 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
         var healthBar = GetComponentInChildren<EnemyHealthBar>();
         if (healthBar != null)
             OnHealthChanged += healthBar.UpdateBar;
+
+        var player = FindObjectOfType<PlayerStats>();
+        if (player != null)
+        {
+            playerTransform = player.transform;
+            playerDamageable = player;
+        }
+        else
+        {
+            Debug.LogWarning($"[{GetType().Name}] 씬에서 PlayerStats를 찾지 못했습니다.");
+        }
     }
+
+    protected bool HasPlayer => playerTransform != null;
+
+    protected float DistToPlayer() =>
+        Vector2.Distance(transform.position, playerTransform.position);
+
+    protected Vector2 DirToPlayer() =>
+        ((Vector2)playerTransform.position - (Vector2)transform.position).normalized;
 
     public void TakeDamage(float amount)
     {
