@@ -23,6 +23,7 @@ public abstract class BossBase : EnemyBase
     private BossPattern lastPattern;
     private bool isBusy;
     private float nextPatternTime;
+    private Coroutine patternCoroutine;
 
     protected abstract List<BossPattern> BuildPatterns();
 
@@ -47,7 +48,7 @@ public abstract class BossBase : EnemyBase
         var picked = PickPattern();
         if (picked == null) return;
 
-        StartCoroutine(RunPattern(picked));
+        patternCoroutine = StartCoroutine(RunPattern(picked));
     }
 
     private BossPattern PickPattern()
@@ -103,4 +104,17 @@ public abstract class BossBase : EnemyBase
     protected float TempoScale => GetIntervalScale();
 
     protected override void PerformAttack(IDamageable target) { }
+
+    // 사망 시 진행 중이던 패턴 코루틴을 멈춰서, 죽은 뒤에도 공격이 계속 나가는 것을 방지.
+    protected override void OnDied()
+    {
+        if (patternCoroutine != null)
+        {
+            StopCoroutine(patternCoroutine);
+            patternCoroutine = null;
+        }
+        isBusy = false;
+
+        base.OnDied();
+    }
 }
