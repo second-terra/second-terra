@@ -227,6 +227,13 @@ public class GreatSword : MonoBehaviour
     // 이동키를 누르고 있으면 충돌함. 지금은 MovePosition으로 처리하되, 추후 팀원 훅으로 정리 예정.
     private IEnumerator StepDashRoutine(Vector2 dir, float distance, float duration)
     {
+        // duration이 0이면 elapsed/duration이 NaN → MovePosition에 NaN 들어가 물리 파괴됨. 즉시 이동 후 종료.
+        if (duration <= 0f)
+        {
+            rb.MovePosition(rb.position + dir.normalized * distance);
+            yield break;
+        }
+
         Vector2 start = rb.position;
         Vector2 target = start + dir.normalized * distance;
         float elapsed = 0f;
@@ -254,7 +261,7 @@ public class GreatSword : MonoBehaviour
         }
 
         Collider2D[] hits = Physics2D.OverlapCircleAll(center, radius, hitLayers);
-        HashSet<Collider2D> damaged = new(); // 한 스윙에 같은 적 중복 타격 방지
+        HashSet<IDamageable> damaged = new(); // 적 단위 중복 타격 방지(콜라이더 여러 개여도 1회)
 
         foreach (Collider2D hit in hits)
         {
@@ -266,9 +273,7 @@ public class GreatSword : MonoBehaviour
                     continue;
             }
 
-            if (!damaged.Add(hit)) continue;
-
-            if (hit.TryGetComponent<IDamageable>(out var target) && !target.IsDead)
+            if (hit.TryGetComponent<IDamageable>(out var target) && !target.IsDead && damaged.Add(target))
             {
                 target.TakeDamage(damage);
                 AddEnergy(energyPerHit);
@@ -409,7 +414,7 @@ public class GreatSword : MonoBehaviour
         // 강화 소비: 피해 += 에너지×2, 시전시간 감소(에너지 100일 때 1/4)
         bool enhanced = ConsumeEnhance(out float energy);
         float castTime = enhanced
-            ? releaseCastTime * Mathf.Lerp(1f, releaseEnhanceMinCastFactor, energy / 100f)
+            ? releaseCastTime * Mathf.Lerp(1f, releaseEnhanceMinCastFactor, energy / Mathf.Max(1f, maxEnergy))
             : releaseCastTime;
         float dmg = enhanced
             ? releaseDamage + energy * enhanceEnergyDamageMul
@@ -437,12 +442,11 @@ public class GreatSword : MonoBehaviour
             visualizer.FlashBox(center, size, angle, enhanced ? enhancedColor : releaseColor);
 
         Collider2D[] hits = Physics2D.OverlapBoxAll(center, size, angle, hitLayers);
-        HashSet<Collider2D> damaged = new();
+        HashSet<IDamageable> damaged = new(); // 적 단위 중복 타격 방지
 
         foreach (Collider2D hit in hits)
         {
-            if (!damaged.Add(hit)) continue;
-            if (hit.TryGetComponent<IDamageable>(out var target) && !target.IsDead)
+            if (hit.TryGetComponent<IDamageable>(out var target) && !target.IsDead && damaged.Add(target))
                 target.TakeDamage(damage);
         }
     }
@@ -470,7 +474,7 @@ public class GreatSword : MonoBehaviour
         // 강화 소비: 시전 시간 감소(에너지 100일 때 1/2), 마무리 피해 += 에너지×2
         bool enhanced = ConsumeEnhance(out float energy);
         float total = enhanced
-            ? crushCastTime * Mathf.Lerp(1f, crushEnhanceMinCastFactor, energy / 100f)
+            ? crushCastTime * Mathf.Lerp(1f, crushEnhanceMinCastFactor, energy / Mathf.Max(1f, maxEnergy))
             : crushCastTime;
         float finisherBonus = enhanced ? energy * enhanceEnergyDamageMul : 0f;
         Color color = enhanced ? enhancedColor : crushColor;
@@ -480,9 +484,9 @@ public class GreatSword : MonoBehaviour
         // 선딜
         yield return new WaitForSeconds(crushDelay);
 
-        // 찍기 × N (선딜 뒤 남은 시간을 균등 분할, 마지막 슬롯은 마무리용)
+        // 찍기 × N 후 마무리. 찍기 사이 간격 = 남은 시간 / N → 마무리가 정확히 시전 끝(total)에 발생.
         float stompPhase = Mathf.Max(0.1f, total - crushDelay);
-        float interval = stompPhase / (crushStompCount + 1);
+        float interval = stompPhase / Mathf.Max(1, crushStompCount);
 
         for (int i = 0; i < crushStompCount; i++)
         {
@@ -505,12 +509,11 @@ public class GreatSword : MonoBehaviour
             visualizer.FlashCircle(center, radius, color);
 
         Collider2D[] hits = Physics2D.OverlapCircleAll(center, radius, hitLayers);
-        HashSet<Collider2D> damaged = new();
+        HashSet<IDamageable> damaged = new(); // 적 단위 중복 타격 방지
 
         foreach (Collider2D hit in hits)
         {
-            if (!damaged.Add(hit)) continue;
-            if (hit.TryGetComponent<IDamageable>(out var target) && !target.IsDead)
+            if (hit.TryGetComponent<IDamageable>(out var target) && !target.IsDead && damaged.Add(target))
                 target.TakeDamage(damage);
         }
     }
