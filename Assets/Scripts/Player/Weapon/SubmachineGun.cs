@@ -24,7 +24,7 @@ public class SubmachineGun : MonoBehaviour
     [SerializeField] private float barrageDamage = 4f;
     [SerializeField] private float barrageRadius = 3f;   // 캐릭터 중심 원 범위
     [SerializeField] private float barrageRpm = 300f;    // 초당 5발
-    // 참고: "이동 속도 2배 느림"은 PlayerController(팀원 파일)를 못 건드려서 미구현. 훅 필요.
+    [SerializeField] private float barrageSlowMultiplier = 0.5f; // 탄막 중 이동 속도 배율(0.5 = 2배 느림)
 
     [Header("도탄 (2키)")]
     [SerializeField] private KeyCode ricochetKey = KeyCode.Alpha2;
@@ -55,7 +55,8 @@ public class SubmachineGun : MonoBehaviour
 
     private bool barrageActive;
     private float lastBarrageTick;
-    private LineRenderer barrageRing;   // 탄막 범위 시각화(링)
+    private LineRenderer barrageRing;    // 탄막 범위 시각화(링)
+    private PlayerController controller; // 탄막 이동 슬로우용
 
     private bool ricochetActive;
     private float lastRicochetTime = -999f;
@@ -81,6 +82,7 @@ public class SubmachineGun : MonoBehaviour
     private void Awake()
     {
         currentAmmo = magSize;
+        controller = GetComponent<PlayerController>();
 
         if (lineRenderer == null)
             lineRenderer = GetComponent<LineRenderer>();
@@ -107,10 +109,22 @@ public class SubmachineGun : MonoBehaviour
         barrageRing.enabled = false;
     }
 
+    // 무기 비활성화 시 슬로우가 남지 않게 원복
+    private void OnDisable()
+    {
+        if (controller != null)
+            controller.SpeedMultiplier = 1f;
+        barrageActive = false;
+    }
+
     private void Update()
     {
         // 스킬 입력
-        if (Input.GetKeyDown(barrageKey)) barrageActive = !barrageActive;   // 토글
+        if (Input.GetKeyDown(barrageKey))
+        {
+            barrageActive = !barrageActive;   // 토글
+            ApplyBarrageSpeed();              // 이동 속도 조절
+        }
         if (Input.GetKeyDown(ricochetKey)) TryRicochet();
         if (Input.GetKeyDown(overloadKey)) TryOverload();
 
@@ -139,6 +153,13 @@ public class SubmachineGun : MonoBehaviour
             lineRenderer.enabled = false;
     }
 
+    // 탄막 켜짐/꺼짐에 따라 플레이어 이동 속도 조절 (PlayerController.SpeedMultiplier 훅)
+    private void ApplyBarrageSpeed()
+    {
+        if (controller != null)
+            controller.SpeedMultiplier = barrageActive ? barrageSlowMultiplier : 1f;
+    }
+
     private bool CanShoot()
     {
         return !isReloading && currentAmmo > 0 && Time.time >= lastShotTime + FireInterval;
@@ -159,11 +180,13 @@ public class SubmachineGun : MonoBehaviour
         {
             endPoint = hit.point;
             if (hit.collider.TryGetComponent<IDamageable>(out var target) && !target.IsDead)
+            {
                 target.TakeDamage(attackDamage);
 
-            // 도탄: 첫 명중 지점에서 다른 적에게 튕김
-            if (ricochetActive)
-                Ricochet(hit.collider, hit.point);
+                // 도탄: 첫 명중한 적에서 다른 적에게 튕김
+                if (ricochetActive)
+                    Ricochet(target, hit.point);
+            }
         }
         else
         {
@@ -174,37 +197,38 @@ public class SubmachineGun : MonoBehaviour
     }
 
     // 도탄 연쇄: from 지점에서 가장 가까운 다른 적으로 최대 N번 튕김
-    private void Ricochet(Collider2D first, Vector2 fromPoint)
+    private void Ricochet(IDamageable first, Vector2 fromPoint)
     {
-        HashSet<Collider2D> chained = new() { first };
+        HashSet<IDamageable> chained = new() { first }; // 적 단위로 중복 방지(콜라이더 여러 개여도 1회)
         Vector2 cur = fromPoint;
 
         for (int i = 0; i < ricochetMaxBounces; i++)
         {
-            Collider2D next = FindNearestEnemy(cur, ricochetChainRange, chained);
+            IDamageable next = FindNearestEnemy(cur, ricochetChainRange, chained, out Vector2 nextPos);
             if (next == null) break;
 
             chained.Add(next);
-            if (next.TryGetComponent<IDamageable>(out var t) && !t.IsDead)
-                t.TakeDamage(attackDamage);
-            cur = next.transform.position;
+            next.TakeDamage(attackDamage);
+            cur = nextPos;
         }
     }
 
-    private Collider2D FindNearestEnemy(Vector2 from, float range, HashSet<Collider2D> exclude)
+    private IDamageable FindNearestEnemy(Vector2 from, float range, HashSet<IDamageable> exclude, out Vector2 pos)
     {
         Collider2D[] cands = Physics2D.OverlapCircleAll(from, range, hitLayers);
-        Collider2D best = null;
+        IDamageable best = null;
+        Vector2 bestPos = from;
         float bestDist = float.MaxValue;
 
         foreach (Collider2D c in cands)
         {
-            if (exclude.Contains(c)) continue;
             if (!c.TryGetComponent<IDamageable>(out var d) || d.IsDead) continue;
+            if (exclude.Contains(d)) continue;
 
             float dist = ((Vector2)c.transform.position - from).sqrMagnitude;
-            if (dist < bestDist) { bestDist = dist; best = c; }
+            if (dist < bestDist) { bestDist = dist; best = d; bestPos = c.transform.position; }
         }
+        pos = bestPos;
         return best;
     }
 
@@ -218,8 +242,9 @@ public class SubmachineGun : MonoBehaviour
         currentAmmo--;
 
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, barrageRadius, hitLayers);
+        HashSet<IDamageable> damaged = new(); // 적 단위 중복 방지(콜라이더 여러 개여도 1회)
         foreach (Collider2D h in hits)
-            if (h.TryGetComponent<IDamageable>(out var t) && !t.IsDead)
+            if (h.TryGetComponent<IDamageable>(out var t) && !t.IsDead && damaged.Add(t))
                 t.TakeDamage(barrageDamage);
     }
 
