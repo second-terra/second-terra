@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 // 드론 본체 (DroneWeapon이 런타임 생성).
@@ -16,8 +17,8 @@ public class Drone : MonoBehaviour
     private float contactDamageToDrone;      // 적 충돌 시 드론이 받는 피해
     private float electrifiedDamageToEnemy;   // 감전 시 충돌한 적이 받는 피해
 
-    private const float ContactInterval = 0.5f; // 충돌 피해 간격(매 프레임 방지)
-    private float lastContactTime = -99f;
+    private const float ContactInterval = 0.5f; // 충돌 피해 간격(적 단위)
+    private readonly Dictionary<IDamageable, float> lastContactByEnemy = new(); // 적별 마지막 접촉 시각
     private float lastShotLineHide;
 
     private bool electrified;
@@ -168,13 +169,31 @@ public class Drone : MonoBehaviour
         UpdateBodyColor();
     }
 
+    private void OnDisable()
+    {
+        // 드론 비활성화(사망 포함) 시 사격 선이 화면에 남지 않게
+        if (shotLine != null) shotLine.enabled = false;
+    }
+
+    private void OnDestroy()
+    {
+        // 런타임 생성한 오브젝트/머티리얼 정리 (누수 방지)
+        if (body != null && body.material != null) Destroy(body.material);
+        if (shotLine != null)
+        {
+            if (shotLine.material != null) Destroy(shotLine.material);
+            Destroy(shotLine.gameObject);
+        }
+    }
+
     // 적과 충돌: 감전이면 적이 피해, 아니면 드론이 피해
     private void OnTriggerStay2D(Collider2D other)
     {
-        if (Time.time < lastContactTime + ContactInterval) return;
         if (!other.TryGetComponent<IDamageable>(out var enemy) || enemy.IsDead) return;
 
-        lastContactTime = Time.time;
+        // 접촉 쿨다운을 적 단위로 (여러 적이 동시에 닿아도 각자 처리)
+        if (lastContactByEnemy.TryGetValue(enemy, out float last) && Time.time < last + ContactInterval) return;
+        lastContactByEnemy[enemy] = Time.time;
 
         if (electrified)
         {

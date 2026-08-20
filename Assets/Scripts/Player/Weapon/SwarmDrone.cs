@@ -56,6 +56,13 @@ public class SwarmDrone : MonoBehaviour
             Explode();
     }
 
+    private void OnDestroy()
+    {
+        // 런타임 생성 머티리얼 정리 (누수 방지)
+        var lr = GetComponent<LineRenderer>();
+        if (lr != null && lr.material != null) Destroy(lr.material);
+    }
+
     private void Explode()
     {
         if (exploded) return;
