@@ -104,23 +104,16 @@ public class DroneWeapon : MonoBehaviour
     {
         if (drone == null || !drone.IsAlive) return;
         if (Time.time < lastElectrifyTime + electrifyCooldown)
-        {
-            Debug.Log($"[드론] 감전 쿨타임 {lastElectrifyTime + electrifyCooldown - Time.time:F1}초 남음");
             return;
-        }
         lastElectrifyTime = Time.time;
         drone.SetElectrified(electrifyDuration);
-        Debug.Log("[드론] 감전 ON");
     }
 
     // 드론 스웜: 초소형 드론 N개 사출 → 각자 가장 가까운 적에게 날아가 자폭
     private void TrySwarm()
     {
         if (Time.time < lastSwarmTime + swarmCooldown)
-        {
-            Debug.Log($"[드론] 스웜 쿨타임 {lastSwarmTime + swarmCooldown - Time.time:F1}초 남음");
             return;
-        }
         lastSwarmTime = Time.time;
 
         for (int i = 0; i < swarmCount; i++)
@@ -131,7 +124,6 @@ public class DroneWeapon : MonoBehaviour
             Vector2 spawn = (Vector2)transform.position + Random.insideUnitCircle * 0.5f;
             sd.Init(spawn, tgt, swarmSpeed, swarmDamage, swarmExplodeRadius, hitLayers, swarmLife);
         }
-        Debug.Log($"[드론] 스웜! {swarmCount}개 사출");
     }
 
     // 음파: 드론 전방(커서 방향) 부채꼴 내 적 감지. (둔화 적용은 EnemyBase 훅 필요)
@@ -139,10 +131,7 @@ public class DroneWeapon : MonoBehaviour
     {
         if (drone == null || !drone.IsAlive) return;
         if (Time.time < lastSonicTime + sonicCooldown)
-        {
-            Debug.Log($"[드론] 음파 쿨타임 {lastSonicTime + sonicCooldown - Time.time:F1}초 남음");
             return;
-        }
         lastSonicTime = Time.time;
 
         Vector2 origin = drone.transform.position;
@@ -150,17 +139,14 @@ public class DroneWeapon : MonoBehaviour
         Vector2 fwd = (mouseWorld - origin).normalized;
         if (fwd == Vector2.zero) fwd = Vector2.up;
 
-        int hitCount = 0;
         foreach (var e in EnemyBase.ActiveEnemies)
         {
             if (e == null || e.IsDead) continue;
             Vector2 to = (Vector2)e.transform.position - origin;
             if (to.magnitude > sonicRange) continue;
             if (Vector2.Angle(fwd, to) > sonicHalfAngle) continue;
-            hitCount++;
-            // TODO: EnemyBase에 둔화 훅(예: ApplySlow(공속배율, 이속배율, 지속))이 생기면 여기서 호출
+            // TODO: EnemyBase.ApplySlow(이속배율, 공속배율, 지속) 훅 생기면 여기서 호출 (현재 둔화 미구현)
         }
-        Debug.Log($"[드론] 음파! 전방 적중 {hitCount}체 (둔화 적용은 EnemyBase 훅 대기 중)");
     }
 
     // 폭파+재구성: 드론 있으면 자폭(원형 피해) 후 의체 위치에 재소환. 드론 없으면 재소환만.
@@ -169,10 +155,7 @@ public class DroneWeapon : MonoBehaviour
     {
         bool droneDead = drone == null || !drone.IsAlive;
         if (!droneDead && Time.time < lastReconstructTime + reconstructCooldown)
-        {
-            Debug.Log($"[드론] 재구성 쿨타임 {lastReconstructTime + reconstructCooldown - Time.time:F1}초 남음");
             return;
-        }
         lastReconstructTime = Time.time;
 
         // 살아있는 드론이면 자폭 원형 피해
@@ -190,7 +173,6 @@ public class DroneWeapon : MonoBehaviour
         // 재소환 + 기본 감전
         SpawnDrone();
         drone.SetElectrified(reconstructElectrifyDuration);
-        Debug.Log("[드론] 폭파+재구성! 새 드론 소환 (감전 활성)");
     }
 
     private Transform FindNearestEnemy(Vector2 from)
