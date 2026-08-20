@@ -1540,7 +1540,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 5
-  SpeedMultiplier: 1
 --- !u!50 &1872774599
 Rigidbody2D:
   serializedVersion: 4
@@ -1662,26 +1661,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1872774596}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2394312de54ee7d4f9ab33b29ab2dc10, type: 3}
+  m_Script: {fileID: 11500000, guid: 34f969b02a2af4c29b6c1df1d6fe47fd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hitLayers:
-    serializedVersion: 2
-    m_Bits: 1
-  droneHp: 50
-  droneMoveSpeed: 8
-  droneContactDamage: 5
-  droneSpawnOffset: {x: 1, y: 1}
-  shotDamage: 4
-  shotRange: 12
-  burstCount: 5
-  burstTime: 0.5
-  betweenBurst: 0.3
-  electrifyKey: 51
-  electrifyDuration: 5
-  electrifyCooldown: 6
-  electrifiedDamageToEnemy: 8
-  showDebugHUD: 1
 --- !u!1 &2102495768
 GameObject:
   m_ObjectHideFlags: 0
