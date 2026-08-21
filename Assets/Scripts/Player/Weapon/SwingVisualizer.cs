@@ -33,6 +33,13 @@ public class SwingVisualizer : MonoBehaviour
             lr.enabled = false;
     }
 
+    // 런타임에 만든 머티리얼은 자동 회수되지 않으므로 직접 파괴 (메모리 누수 방지)
+    private void OnDestroy()
+    {
+        if (lr != null && lr.material != null)
+            Destroy(lr.material);
+    }
+
     // center를 중심으로 radius 원을 color 색으로 잠깐 표시
     public void FlashCircle(Vector2 center, float radius, Color color)
     {
