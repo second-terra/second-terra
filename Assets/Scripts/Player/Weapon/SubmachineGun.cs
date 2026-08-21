@@ -109,12 +109,28 @@ public class SubmachineGun : MonoBehaviour
         barrageRing.enabled = false;
     }
 
-    // 무기 비활성화 시 슬로우가 남지 않게 원복
+    // 무기 비활성화 시 진행 중이던 코루틴이 멈추므로, 남을 수 있는 상태를 모두 원복
     private void OnDisable()
     {
         if (controller != null)
             controller.SpeedMultiplier = 1f;
+
         barrageActive = false;
+        ricochetActive = false;
+        overloadActive = false;
+        isReloading = false;   // 재장전 코루틴이 중단돼도 다시 켜졌을 때 잠기지 않게
+
+        if (barrageRing != null) barrageRing.enabled = false;
+        if (lineRenderer != null) lineRenderer.enabled = false;
+    }
+
+    // 런타임에 만든 머티리얼은 자동 회수되지 않으므로 직접 파괴 (메모리 누수 방지)
+    private void OnDestroy()
+    {
+        if (lineRenderer != null && lineRenderer.material != null)
+            Destroy(lineRenderer.material);
+        if (barrageRing != null && barrageRing.material != null)
+            Destroy(barrageRing.material);
     }
 
     private void Update()
@@ -274,15 +290,11 @@ public class SubmachineGun : MonoBehaviour
     private void TryRicochet()
     {
         if (Time.time < lastRicochetTime + ricochetCooldown)
-        {
-            Debug.Log($"[기관단총] 도탄 쿨타임 {RicochetCooldownRemaining:F1}초 남음");
             return;
-        }
 
         currentAmmo = magSize;
         isReloading = false;
         ricochetActive = true;
-        Debug.Log("[기관단총] 도탄 장전! 이 탄창은 튕김");
     }
 
     // 과부하: 일정 시간 RPM 2배 + 재장전 단축. 지속 끝난 후 쿨타임.
@@ -290,14 +302,10 @@ public class SubmachineGun : MonoBehaviour
     {
         if (overloadActive) return;
         if (Time.time < lastOverloadTime + overloadCooldown)
-        {
-            Debug.Log($"[기관단총] 과부하 쿨타임 {OverloadCooldownRemaining:F1}초 남음");
             return;
-        }
 
         overloadActive = true;
         overloadEndTime = Time.time + overloadDuration;
-        Debug.Log($"[기관단총] 과부하! RPM {overloadRpm}, 재장전 {overloadReloadTime}s ({overloadDuration}초간)");
     }
 
     private void DrawLine(Vector2 a, Vector2 b, bool didHit)
