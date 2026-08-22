@@ -13,6 +13,9 @@ public class PlayerController : MonoBehaviour
     private Vector2 moveInput;
     private Camera mainCamera;
 
+    public float MoveSpeed => moveSpeed;
+    public Vector2 MoveDirection => moveInput;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
