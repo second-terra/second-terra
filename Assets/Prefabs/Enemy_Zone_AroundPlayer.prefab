@@ -356,6 +356,9 @@ MonoBehaviour:
   attackCooldown: 1.5
   hitFlashDuration: 0.1
   rotationSpeed: 8
+  preferredRange: 6
+  retreatRange: 3
+  kitingMoveSpeed: 2.5
   zoneLocation: 1
   zoneRadius: 1.5
   telegraphDuration: 1
