@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro;
 
-public class MechSelectManager : MonoBehaviour
+public class CharacterSelectManager : MonoBehaviour
 {
     public GameObject[] selectedFrames;
 
@@ -19,6 +19,15 @@ public class MechSelectManager : MonoBehaviour
 
     public void SelectMech(int mechIndex)
     {
+        if (mechIndex < 0 ||
+        mechIndex >= selectedFrames.Length ||
+        mechIndex >= mechNames.Length ||
+        mechIndex >= mechDescriptions.Length)
+        {
+            Debug.LogWarning("잘못된 의체 인덱스입니다: " + mechIndex);
+            return;
+        }
+
         selectedMech = mechIndex;
 
         for (int i = 0; i < selectedFrames.Length; i++)
@@ -29,7 +38,6 @@ public class MechSelectManager : MonoBehaviour
         mechName.text = mechNames[mechIndex];
         mechDescription.text = mechDescriptions[mechIndex];
 
-        Debug.Log("선택한 의체: " + selectedMech);
     }
 
     public void StartGame()

@@ -9,6 +9,12 @@ public class DeathManager : MonoBehaviour
 
     public void ShowDeathPanel()
     {
+        if (deathPanel == null)
+        {
+            Debug.LogWarning("DeathPanel이 연결되지 않았습니다.");
+            return;
+        }
+
         deathPanel.SetActive(true);
     }
 
