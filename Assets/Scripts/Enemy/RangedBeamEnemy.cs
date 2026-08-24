@@ -26,6 +26,7 @@ public class RangedBeamEnemy : RangedEnemyBase
 
     private LineRenderer line;
     private AudioSource audioSource;
+    private Material lineMaterial;
 
     protected override void Awake()
     {
@@ -34,9 +35,17 @@ public class RangedBeamEnemy : RangedEnemyBase
 
         line = gameObject.AddComponent<LineRenderer>();
         line.positionCount = 2;
-        line.material = new Material(Shader.Find("Sprites/Default"));
+        lineMaterial = new Material(Shader.Find("Sprites/Default"));
+        line.material = lineMaterial;
         line.widthMultiplier = lineWidth;
         line.enabled = false;
+    }
+
+    // new Material(...)로 만든 인스턴스는 Unity가 자동으로 해제하지 않으므로 직접 정리.
+    private void OnDestroy()
+    {
+        if (lineMaterial != null)
+            Destroy(lineMaterial);
     }
 
     protected override void Update()
@@ -65,7 +74,8 @@ public class RangedBeamEnemy : RangedEnemyBase
         stateTimer = telegraphDuration;
         lockedDir = DirToPlayer();
 
-        ShowLine(telegraphColor, lockedDir * beamRange);
+        Vector2 origin = (Vector2)transform.position + lockedDir * beamOriginOffset;
+        ShowLine(telegraphColor, origin, origin + lockedDir * beamRange);
         if (warningClip != null)
             audioSource.PlayOneShot(warningClip);
     }
@@ -83,15 +93,33 @@ public class RangedBeamEnemy : RangedEnemyBase
         stateTimer = beamVisibleDuration;
 
         Vector2 origin = (Vector2)transform.position + lockedDir * beamOriginOffset;
-        var hit = Physics2D.Raycast(origin, lockedDir, beamRange);
+        var hit = FindBeamHit(origin, lockedDir);
 
-        Vector2 endPoint = hit.collider != null ? hit.point : origin + lockedDir * beamRange;
-        if (hit.collider != null && hit.collider.TryGetComponent<PlayerStats>(out var player))
+        Vector2 endPoint = hit.HasValue ? hit.Value.point : origin + lockedDir * beamRange;
+        if (hit.HasValue && hit.Value.collider.TryGetComponent<PlayerStats>(out var player))
             player.TakeDamage(EnemyBalance.RangedBeamDamage);
 
-        ShowLine(fireColor, endPoint - (Vector2)transform.position);
+        ShowLine(fireColor, origin, endPoint);
         if (fireClip != null)
             audioSource.PlayOneShot(fireClip);
+    }
+
+    // 다른 적/적 투사체의 트리거 콜라이더에 빔이 가로막히지 않도록 그런 것들은 건너뛰고,
+    // 실제 판정 대상(플레이어 등)에 해당하는 첫 충돌만 찾는다.
+    private RaycastHit2D? FindBeamHit(Vector2 origin, Vector2 direction)
+    {
+        var hits = Physics2D.RaycastAll(origin, direction, beamRange);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        foreach (var h in hits)
+        {
+            if (h.collider.GetComponent<EnemyBase>() != null || h.collider.GetComponent<EnemyProjectile>() != null)
+                continue;
+
+            return h;
+        }
+
+        return null;
     }
 
     private void UpdateFire()
@@ -115,13 +143,13 @@ public class RangedBeamEnemy : RangedEnemyBase
             state = BeamState.Idle;
     }
 
-    private void ShowLine(Color color, Vector2 localEnd)
+    private void ShowLine(Color color, Vector2 start, Vector2 end)
     {
         line.enabled = true;
         line.startColor = color;
         line.endColor = color;
-        line.SetPosition(0, transform.position);
-        line.SetPosition(1, transform.position + (Vector3)localEnd);
+        line.SetPosition(0, start);
+        line.SetPosition(1, end);
     }
 
     protected override void OnDied()
