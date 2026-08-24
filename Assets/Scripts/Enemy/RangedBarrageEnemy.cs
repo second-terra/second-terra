@@ -27,7 +27,7 @@ public class RangedBarrageEnemy : RangedEnemyBase
         if (target == null || projectilePrefab == null) return;
 
         float speed = playerController != null
-            ? playerController.MoveSpeed * 0.6f
+            ? playerController.MoveSpeed * playerController.SpeedMultiplier * 0.6f
             : projectileSpeedFallback;
 
         Vector2 baseDir = GetAimDirection();
