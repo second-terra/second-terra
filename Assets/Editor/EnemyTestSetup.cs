@@ -256,7 +256,8 @@ public static class EnemyTestSetup
         if (existingAsset != null)
             return existingAsset;
 
-        CreateEnemy<SummonedAdds>("SummonedAdds", new Vector3(0f, -10.5f, 0f), new Color(0.55f, 0.6f, 0.35f));
+        var summonedAdds = CreateEnemy<SummonedAdds>("SummonedAdds", new Vector3(0f, -10.5f, 0f), new Color(0.55f, 0.6f, 0.35f));
+        SavePrefab(summonedAdds, "SummonedAdds");
         return AssetDatabase.LoadAssetAtPath<GameObject>(path);
     }
 
