@@ -211,7 +211,7 @@ MonoBehaviour:
   meleeDamage: 15
   stillnessThreshold: 0.6
   attackWindup: 0.3
-  projectilePrefab: {fileID: 1479401899464977026, guid: 8a9fa07745fcb44e08359f7535e4c60b, type: 3}
+  projectilePrefab: {fileID: 4154650314176008702, guid: 342e5ad62798d4ed688b48d87f577af7, type: 3}
   jumpRepeatCount: 5
   jumpPrepareTime: 0.5
   jumpDistance: 5

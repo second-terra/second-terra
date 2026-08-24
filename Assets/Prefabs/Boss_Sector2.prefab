@@ -417,7 +417,7 @@ MonoBehaviour:
   intactColor: {r: 1, g: 1, b: 1, a: 1}
   damagedColor: {r: 1, g: 0.7, b: 0.4, a: 1}
   exposedColor: {r: 1, g: 0.3, b: 0.3, a: 1}
-  projectilePrefab: {fileID: 1479401899464977026, guid: 8a9fa07745fcb44e08359f7535e4c60b, type: 3}
+  projectilePrefab: {fileID: 4154650314176008702, guid: 342e5ad62798d4ed688b48d87f577af7, type: 3}
   waveRepeatCount: 5
   waveInterval: 0.4
   waveSpeed: 7
