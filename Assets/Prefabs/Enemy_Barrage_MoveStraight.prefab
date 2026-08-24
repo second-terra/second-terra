@@ -245,6 +245,9 @@ MonoBehaviour:
   attackCooldown: 1.5
   hitFlashDuration: 0.1
   rotationSpeed: 8
+  preferredRange: 6
+  retreatRange: 3
+  kitingMoveSpeed: 2.5
   projectilePrefab: {fileID: 4154650314176008702, guid: 342e5ad62798d4ed688b48d87f577af7, type: 3}
   aimMode: 1
   firePattern: 1
