@@ -50,7 +50,14 @@ public class RangedBeamEnemy : RangedEnemyBase
 
     protected override void Update()
     {
-        if (isDead || !HasPlayer) return;
+        if (isDead || !HasPlayer) { StopMoving(); return; }
+
+        // 조준을 잠근 뒤(Telegraph/Fire)에는 위치가 바뀌면 텔레그래프와 실제 발사 지점이 어긋나므로
+        // 그 구간에는 카이팅 이동을 멈춘다. Idle/Cooldown에서만 거리 유지 이동을 한다.
+        if (state == BeamState.Idle || state == BeamState.Cooldown)
+            UpdateKiting();
+        else
+            StopMoving();
 
         switch (state)
         {
