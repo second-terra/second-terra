@@ -11,7 +11,9 @@ public class DamageZone : MonoBehaviour
     private float damage;
     private SpriteRenderer sr;
 
-    public void Init(float radius, float telegraphDuration, float damage)
+    // activeDuration <= 0: 텔레그래프 후 1회만 즉시 판정하고 사라짐.
+    // activeDuration > 0: 텔레그래프 후 그 시간 동안 tickInterval마다 반복 판정하는 지속형 장판.
+    public void Init(float radius, float telegraphDuration, float damage, float activeDuration = 0f, float tickInterval = 0.5f)
     {
         this.radius = radius;
         this.damage = damage;
@@ -21,23 +23,41 @@ public class DamageZone : MonoBehaviour
         sr.color = new Color(1f, 0.2f, 0.2f, 0.35f);
         transform.localScale = Vector3.one * radius * 2f;
 
-        StartCoroutine(Sequence(telegraphDuration));
+        // tickInterval이 0 이하면 지속형 루프의 elapsed가 안 늘어나서 영원히 안 끝남 -> 최소값 보정.
+        if (activeDuration > 0f)
+            tickInterval = Mathf.Max(tickInterval, 0.05f);
+
+        StartCoroutine(Sequence(telegraphDuration, activeDuration, tickInterval));
     }
 
-    private IEnumerator Sequence(float telegraphDuration)
+    private IEnumerator Sequence(float telegraphDuration, float activeDuration, float tickInterval)
     {
         yield return new WaitForSeconds(telegraphDuration);
-        Detonate();
-        yield return new WaitForSeconds(ImpactVisibleDuration);
+        sr.color = new Color(1f, 0.4f, 0f, 0.6f);
+
+        if (activeDuration <= 0f)
+        {
+            DealDamageIfOverlapping();
+            yield return new WaitForSeconds(ImpactVisibleDuration);
+        }
+        else
+        {
+            float elapsed = 0f;
+            while (elapsed < activeDuration)
+            {
+                DealDamageIfOverlapping();
+                yield return new WaitForSeconds(tickInterval);
+                elapsed += tickInterval;
+            }
+        }
+
         Destroy(gameObject);
     }
 
     // OverlapCircle은 겹친 콜라이더 중 임의의 하나만 반환하므로, 플레이어가 다른 콜라이더와
     // 함께 겹쳐있을 때 플레이어를 놓칠 수 있음 -> 겹친 것 전부를 훑어서 플레이어를 찾는다.
-    private void Detonate()
+    private void DealDamageIfOverlapping()
     {
-        sr.color = new Color(1f, 0.4f, 0f, 0.6f);
-
         var hits = Physics2D.OverlapCircleAll(transform.position, radius);
         foreach (var hit in hits)
         {

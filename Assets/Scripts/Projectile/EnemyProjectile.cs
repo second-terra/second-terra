@@ -28,4 +28,21 @@ public class EnemyProjectile : MonoBehaviour
             Destroy(gameObject);
         }
     }
+
+    public static void FireRadial(GameObject prefab, Vector2 center, Vector2 baseDir, int count, float speed, float damage)
+    {
+        if (prefab == null || count <= 0) return;
+
+        float baseAngle = Mathf.Atan2(baseDir.y, baseDir.x);
+        float step = Mathf.PI * 2f / count;
+
+        for (int i = 0; i < count; i++)
+        {
+            float angle = baseAngle + step * i;
+            Vector2 dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+
+            GameObject obj = Instantiate(prefab, center, Quaternion.identity);
+            obj.GetComponent<EnemyProjectile>().Init(dir, speed, damage);
+        }
+    }
 }
