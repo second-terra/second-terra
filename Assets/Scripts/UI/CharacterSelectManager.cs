@@ -44,7 +44,7 @@ public class CharacterSelectManager : MonoBehaviour
     {
         if (selectedMech == -1)
         {
-            Debug.Log("의체를 선택해주세요.");
+            Debug.LogWarning("의체를 선택해주세요.");
             return;
         }
 

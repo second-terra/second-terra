@@ -206,7 +206,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1588466351}
-        m_TargetAssemblyTypeName: MechSelectManager, Assembly-CSharp
+        m_TargetAssemblyTypeName: CharacterSelectManager, Assembly-CSharp
         m_MethodName: SelectMech
         m_Mode: 3
         m_Arguments:
@@ -339,7 +339,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1588466351}
-        m_TargetAssemblyTypeName: MechSelectManager, Assembly-CSharp
+        m_TargetAssemblyTypeName: CharacterSelectManager, Assembly-CSharp
         m_MethodName: SelectMech
         m_Mode: 3
         m_Arguments:
@@ -860,7 +860,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1588466351}
-        m_TargetAssemblyTypeName: MechSelectManager, Assembly-CSharp
+        m_TargetAssemblyTypeName: CharacterSelectManager, Assembly-CSharp
         m_MethodName: StartGame
         m_Mode: 1
         m_Arguments:
@@ -1183,7 +1183,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Mech Name
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1941,7 +1941,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1588466351}
-        m_TargetAssemblyTypeName: MechSelectManager, Assembly-CSharp
+        m_TargetAssemblyTypeName: CharacterSelectManager, Assembly-CSharp
         m_MethodName: SelectMech
         m_Mode: 3
         m_Arguments:
@@ -2198,7 +2198,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Mech description will be displayed here.
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
