@@ -42,9 +42,9 @@ public abstract class RangedEnemyBase : EnemyBase
         float dist = DistToPlayer();
 
         if (dist < retreatRange)
-            Move(-DirToPlayer(), kitingMoveSpeed);
+            Move(-DirToPlayer(), kitingMoveSpeed * SlowMoveMultiplier);
         else if (dist > preferredRange)
-            Move(DirToPlayer(), kitingMoveSpeed);
+            Move(DirToPlayer(), kitingMoveSpeed * SlowMoveMultiplier);
         else
             StopMoving();
     }
