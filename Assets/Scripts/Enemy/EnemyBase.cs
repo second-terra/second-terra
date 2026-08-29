@@ -19,6 +19,10 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     protected float currentHp;
     protected bool isDead;
 
+    private float baseMoveSpeed;
+    private float baseAttackCooldown;
+    private int activeSlowCount;
+
     protected Transform playerTransform;
     protected IDamageable playerDamageable;
 
@@ -102,6 +106,37 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
 
         currentHp = Mathf.Min(maxHp, currentHp + amount);
         OnHealthChanged?.Invoke(currentHp, maxHp);
+    }
+
+    // 이동속도/공격속도를 일정 시간 둔화시킨다 (예: 드론 음파 스킬). 지속시간이 지나면 자동 복구.
+    // 중첩 호출 시 base 값은 최초 1회만 저장하고, 모든 중첩 호출의 지속시간이 끝나야 복구한다.
+    public void ApplySlow(float moveSpeedMultiplier, float attackSpeedMultiplier, float duration)
+    {
+        if (isDead) return;
+
+        if (activeSlowCount == 0)
+        {
+            baseMoveSpeed = moveSpeed;
+            baseAttackCooldown = attackCooldown;
+        }
+
+        activeSlowCount++;
+        moveSpeed = baseMoveSpeed * moveSpeedMultiplier;
+        attackCooldown = baseAttackCooldown / attackSpeedMultiplier;
+
+        StartCoroutine(RevertSlowAfter(duration));
+    }
+
+    private IEnumerator RevertSlowAfter(float duration)
+    {
+        yield return new WaitForSeconds(duration);
+
+        activeSlowCount = Mathf.Max(0, activeSlowCount - 1);
+        if (activeSlowCount == 0)
+        {
+            moveSpeed = baseMoveSpeed;
+            attackCooldown = baseAttackCooldown;
+        }
     }
 
     // 피격 플래시가 복귀할 "기본색"을 하위 클래스가 갱신할 수 있게 함 (예: 갑피 단계별 색 표시).
