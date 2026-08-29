@@ -21,7 +21,19 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
 
     private float baseMoveSpeed;
     private float baseAttackCooldown;
-    private int activeSlowCount;
+
+    private class SlowEffect
+    {
+        public float MoveMultiplier;
+        public float AttackSpeedMultiplier;
+    }
+
+    private readonly List<SlowEffect> activeSlows = new();
+
+    // moveSpeed/attackCooldown을 직접 읽지 않는 하위 클래스(원거리 카이팅 속도, 보스 이동/템포 등)가
+    // 자기 값에 곱해서 쓸 수 있도록 현재 둔화 배율을 노출한다. 겹친 둔화 중 가장 강한 것이 적용됨.
+    public float SlowMoveMultiplier { get; private set; } = 1f;
+    public float SlowAttackSpeedMultiplier { get; private set; } = 1f;
 
     protected Transform playerTransform;
     protected IDamageable playerDamageable;
@@ -43,6 +55,8 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     protected virtual void Awake()
     {
         currentHp = maxHp;
+        baseMoveSpeed = moveSpeed;
+        baseAttackCooldown = attackCooldown;
 
         spriteRenderer = GetComponent<SpriteRenderer>();
         if (spriteRenderer != null)
@@ -57,6 +71,11 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     protected virtual void OnDisable()
     {
         activeEnemies.Remove(this);
+
+        // 현재 이 프로젝트에서 적은 SetActive(false)로 재사용되지 않고 Destroy로 정리되지만,
+        // 나중에 풀링 등으로 바뀌어도 비활성화 시 둔화 상태가 새지 않도록 방어적으로 정리.
+        activeSlows.Clear();
+        RecalculateSlow();
     }
 
     protected virtual void Start()
@@ -109,34 +128,66 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     }
 
     // 이동속도/공격속도를 일정 시간 둔화시킨다 (예: 드론 음파 스킬). 지속시간이 지나면 자동 복구.
-    // 중첩 호출 시 base 값은 최초 1회만 저장하고, 모든 중첩 호출의 지속시간이 끝나야 복구한다.
+    // 여러 둔화가 겹치면 그중 가장 강한(배율이 가장 작은) 효과가 적용되고, 하나가 만료돼도
+    // 아직 남은 둔화 중 가장 강한 것으로 다시 계산된다 (약한 둔화가 강한 둔화를 덮어쓰지 않음).
     public void ApplySlow(float moveSpeedMultiplier, float attackSpeedMultiplier, float duration)
     {
         if (isDead) return;
+        if (!IsValidSlowArgs(moveSpeedMultiplier, attackSpeedMultiplier, duration)) return;
 
-        if (activeSlowCount == 0)
+        var effect = new SlowEffect
         {
-            baseMoveSpeed = moveSpeed;
-            baseAttackCooldown = attackCooldown;
-        }
+            MoveMultiplier = moveSpeedMultiplier,
+            AttackSpeedMultiplier = attackSpeedMultiplier,
+        };
+        activeSlows.Add(effect);
+        RecalculateSlow();
 
-        activeSlowCount++;
-        moveSpeed = baseMoveSpeed * moveSpeedMultiplier;
-        attackCooldown = baseAttackCooldown / attackSpeedMultiplier;
-
-        StartCoroutine(RevertSlowAfter(duration));
+        StartCoroutine(RevertSlowAfter(effect, duration));
     }
 
-    private IEnumerator RevertSlowAfter(float duration)
+    private static bool IsValidSlowArgs(float moveMultiplier, float attackSpeedMultiplier, float duration)
+    {
+        if (float.IsNaN(moveMultiplier) || float.IsInfinity(moveMultiplier) || moveMultiplier < 0f || moveMultiplier > 1f)
+            return false;
+        if (float.IsNaN(attackSpeedMultiplier) || float.IsInfinity(attackSpeedMultiplier) || attackSpeedMultiplier <= 0f || attackSpeedMultiplier > 1f)
+            return false;
+        if (float.IsNaN(duration) || float.IsInfinity(duration) || duration < 0f)
+            return false;
+        return true;
+    }
+
+    private IEnumerator RevertSlowAfter(SlowEffect effect, float duration)
     {
         yield return new WaitForSeconds(duration);
 
-        activeSlowCount = Mathf.Max(0, activeSlowCount - 1);
-        if (activeSlowCount == 0)
+        activeSlows.Remove(effect);
+        RecalculateSlow();
+    }
+
+    private void RecalculateSlow()
+    {
+        if (activeSlows.Count == 0)
         {
             moveSpeed = baseMoveSpeed;
             attackCooldown = baseAttackCooldown;
+            SlowMoveMultiplier = 1f;
+            SlowAttackSpeedMultiplier = 1f;
+            return;
         }
+
+        float moveMul = 1f;
+        float atkMul = 1f;
+        foreach (var s in activeSlows)
+        {
+            moveMul = Mathf.Min(moveMul, s.MoveMultiplier);
+            atkMul = Mathf.Min(atkMul, s.AttackSpeedMultiplier);
+        }
+
+        moveSpeed = baseMoveSpeed * moveMul;
+        attackCooldown = baseAttackCooldown / atkMul;
+        SlowMoveMultiplier = moveMul;
+        SlowAttackSpeedMultiplier = atkMul;
     }
 
     // 피격 플래시가 복귀할 "기본색"을 하위 클래스가 갱신할 수 있게 함 (예: 갑피 단계별 색 표시).
