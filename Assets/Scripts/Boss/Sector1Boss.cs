@@ -120,6 +120,10 @@ public class Sector1Boss : BossBase
             Vector2 dir = lastPlayerMoveDir;
             Vector2 startPos = rb.position;
 
+            // 도약은 항상 jumpDistance만큼 정확히 이동해야 하므로 속도를 직접 SlowMoveMultiplier로
+            // 줄이지 않는다 - 그러면 목표 착지 지점에 못 미치고 멈춰버림. 대신 duration이 TempoScale
+            // (공격속도 둔화 포함)에 비례해 늘어나 있어서, 같은 거리를 더 오래 걸려 이동하게 되어
+            // 결과적으로 느려진 것처럼 보이면서도 착지 지점은 항상 정확하다.
             float duration = Mathf.Max(0.05f, jumpDuration * TempoScale);
             rb.velocity = dir * (jumpDistance / duration);
 
@@ -150,7 +154,7 @@ public class Sector1Boss : BossBase
             while (elapsed < duration && HasPlayer)
             {
                 elapsed += Time.deltaTime;
-                rb.velocity = DirToPlayer() * chargeSpeed;
+                rb.velocity = DirToPlayer() * chargeSpeed * SlowMoveMultiplier;
                 yield return null;
             }
 

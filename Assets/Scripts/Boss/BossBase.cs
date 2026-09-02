@@ -37,7 +37,7 @@ public abstract class BossBase : EnemyBase
     {
         base.Start();
         patterns = BuildPatterns();
-        nextPatternTime = Time.time + baseInterval * GetIntervalScale();
+        nextPatternTime = Time.time + baseInterval * TempoScale;
     }
 
     protected virtual void Update()
@@ -95,13 +95,15 @@ public abstract class BossBase : EnemyBase
         {
             isBusy = false;
             lastPattern = pattern;
-            nextPatternTime = Time.time + baseInterval * GetIntervalScale();
+            nextPatternTime = Time.time + baseInterval * TempoScale;
         }
     }
 
     protected virtual float GetIntervalScale() => 1f;
 
-    protected float TempoScale => GetIntervalScale();
+    // 체력 기반 템포(GetIntervalScale)와 외부 공격속도 둔화(ApplySlow)를 곱해서 최종 템포를 낸다.
+    // 둔화는 SlowAttackSpeedMultiplier가 1보다 작아질수록 값을 키워 동작을 더 느리게 만든다.
+    protected float TempoScale => GetIntervalScale() / SlowAttackSpeedMultiplier;
 
     protected override void PerformAttack(IDamageable target) { }
 
