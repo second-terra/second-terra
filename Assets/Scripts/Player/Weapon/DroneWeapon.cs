@@ -3,7 +3,7 @@ using UnityEngine;
 
 // 드론 무기(의체) 컨트롤러. 드론 본체를 런타임 생성·관리.
 // 좌클릭: 커서 방향 5점사 / 우클릭: 커서 위치로 드론 이동.
-// 스킬: 1 드론스웜(예정), 2 음파(예정), 3 감전, 4 폭파+재구성(예정).
+// 스킬: 1 드론스웜, 2 음파(둔화), 3 감전, 4 폭파+재구성.
 public class DroneWeapon : MonoBehaviour
 {
     [Header("참조")]
@@ -37,11 +37,17 @@ public class DroneWeapon : MonoBehaviour
     [SerializeField] private float swarmLife = 3f;
     [SerializeField] private float swarmCooldown = 4f;
 
-    [Header("음파 (2키) - 적 둔화는 EnemyBase 훅 필요(현재 감지만)")]
+    [Header("음파 (2키)")]
     [SerializeField] private KeyCode sonicKey = KeyCode.Alpha2;
     [SerializeField] private float sonicRange = 5f;
     [SerializeField] private float sonicHalfAngle = 45f;
     [SerializeField] private float sonicCooldown = 7f;
+    // EnemyBase.ApplySlow는 배율이 0~1을 벗어나면 조용히 무시하므로 Range로 아예 막아둔다.
+    [Range(0f, 1f)]
+    [SerializeField] private float sonicSlowMoveMultiplier = 0.5f;   // 이동속도 배율 (0.5 = 절반)
+    [Range(0.01f, 1f)]
+    [SerializeField] private float sonicSlowAttackMultiplier = 0.7f; // 공격속도 배율 (0.7 = 30% 느려짐)
+    [SerializeField] private float sonicSlowDuration = 3f;           // 둔화 지속시간
 
     [Header("폭파+재구성 (4키)")]
     [SerializeField] private KeyCode reconstructKey = KeyCode.Alpha4;
@@ -58,6 +64,7 @@ public class DroneWeapon : MonoBehaviour
     private float lastElectrifyTime = -999f;
     private float lastSwarmTime = -999f;
     private float lastSonicTime = -999f;
+    private int lastSonicHitCount;   // 개발용 HUD 표시: 마지막 음파로 둔화시킨 적 수
     private float lastReconstructTime = -999f;
     private Camera cam;
 
@@ -126,13 +133,14 @@ public class DroneWeapon : MonoBehaviour
         }
     }
 
-    // 음파: 드론 전방(커서 방향) 부채꼴 내 적 감지. (둔화 적용은 EnemyBase 훅 필요)
+    // 음파: 드론 전방(커서 방향) 부채꼴 내 적을 일정 시간 둔화(이속·공속).
     private void TrySonic()
     {
         if (drone == null || !drone.IsAlive) return;
         if (Time.time < lastSonicTime + sonicCooldown)
             return;
         lastSonicTime = Time.time;
+        lastSonicHitCount = 0;
 
         Vector2 origin = drone.transform.position;
         Vector2 mouseWorld = cam != null ? (Vector2)cam.ScreenToWorldPoint(Input.mousePosition) : origin + Vector2.up;
@@ -145,7 +153,9 @@ public class DroneWeapon : MonoBehaviour
             Vector2 to = (Vector2)e.transform.position - origin;
             if (to.magnitude > sonicRange) continue;
             if (Vector2.Angle(fwd, to) > sonicHalfAngle) continue;
-            // TODO: EnemyBase.ApplySlow(이속배율, 공속배율, 지속) 훅 생기면 여기서 호출 (현재 둔화 미구현)
+
+            e.ApplySlow(sonicSlowMoveMultiplier, sonicSlowAttackMultiplier, sonicSlowDuration);
+            lastSonicHitCount++;
         }
     }
 
@@ -207,7 +217,7 @@ public class DroneWeapon : MonoBehaviour
         GUI.Label(new Rect(14, 12, 460, 180),
             $"[드론]\n드론 HP: {hp}\n" +
             $"감전: {(IsElectrified ? "ON" : "-")}\n" +
-            $"1 스웜쿨 {swarmCd:F1}s | 2 음파쿨 {sonicCd:F1}s\n" +
+            $"1 스웜쿨 {swarmCd:F1}s | 2 음파쿨 {sonicCd:F1}s (직전 둔화 {lastSonicHitCount}체)\n" +
             $"3 감전쿨 {ElectrifyCooldownRemaining:F1}s | 4 재구성쿨 {reconCd:F1}s", style);
     }
 }
