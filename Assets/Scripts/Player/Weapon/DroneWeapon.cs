@@ -42,12 +42,14 @@ public class DroneWeapon : MonoBehaviour
     [SerializeField] private float sonicRange = 5f;
     [SerializeField] private float sonicHalfAngle = 45f;
     [SerializeField] private float sonicCooldown = 7f;
-    // EnemyBase.ApplySlow는 배율이 0~1을 벗어나면 조용히 무시하므로 Range로 아예 막아둔다.
+    // EnemyBase.ApplySlow는 인자가 허용 범위를 벗어나면 조용히 무시한다.
+    // 그러면 둔화가 안 걸렸는데 HUD에는 적중으로 표시되므로, 인스펙터에서 아예 못 넣도록 막아둔다.
     [Range(0f, 1f)]
     [SerializeField] private float sonicSlowMoveMultiplier = 0.5f;   // 이동속도 배율 (0.5 = 절반)
     [Range(0.01f, 1f)]
     [SerializeField] private float sonicSlowAttackMultiplier = 0.7f; // 공격속도 배율 (0.7 = 30% 느려짐)
-    [SerializeField] private float sonicSlowDuration = 3f;           // 둔화 지속시간
+    [Min(0.01f)]
+    [SerializeField] private float sonicSlowDuration = 3f;           // 둔화 지속시간(초), 0 이하면 둔화가 무시됨
 
     [Header("폭파+재구성 (4키)")]
     [SerializeField] private KeyCode reconstructKey = KeyCode.Alpha4;
