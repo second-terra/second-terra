@@ -50,7 +50,25 @@ public class WeaponManager : MonoBehaviour
                 Debug.LogWarning($"[WeaponManager] 저장된 의체 인덱스({saved})가 무기 목록 범위를 벗어나 기본값을 사용합니다.");
         }
 
+        // 기본 인덱스마저 비어있으면 무기가 하나도 안 켜진 채 시작하므로, 첫 유효 슬롯으로 대체한다.
+        if (!IsValidIndex(index))
+        {
+            index = FindFirstValidIndex();
+            if (index < 0)
+            {
+                Debug.LogWarning("[WeaponManager] 등록된 무기가 없습니다. 인스펙터에서 무기 목록을 확인해주세요.");
+                return;
+            }
+        }
+
         Equip(index);
+    }
+
+    private int FindFirstValidIndex()
+    {
+        for (int i = 0; i < WeaponCount; i++)
+            if (weapons[i] != null) return i;
+        return -1;
     }
 
     private void Update()

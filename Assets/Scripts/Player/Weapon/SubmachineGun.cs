@@ -112,13 +112,17 @@ public class SubmachineGun : MonoBehaviour
     // 무기 비활성화 시 진행 중이던 코루틴이 멈추므로, 남을 수 있는 상태를 모두 원복
     private void OnDisable()
     {
+        // 컴포넌트를 꺼도 진행 중인 코루틴은 자동으로 멈추지 않는다.
+        // 재장전 코루틴이 살아있으면 무기를 바꾼 뒤에 탄창·도탄 상태를 되돌려버리므로 직접 중지한다.
+        StopAllCoroutines();
+
         if (controller != null)
             controller.SpeedMultiplier = 1f;
 
         barrageActive = false;
         ricochetActive = false;
         overloadActive = false;
-        isReloading = false;   // 재장전 코루틴이 중단돼도 다시 켜졌을 때 잠기지 않게
+        isReloading = false;   // 재장전이 중단된 채로 남아 다시 켰을 때 잠기지 않게
 
         if (barrageRing != null) barrageRing.enabled = false;
         if (lineRenderer != null) lineRenderer.enabled = false;
