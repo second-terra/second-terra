@@ -73,7 +73,23 @@ public class DroneWeapon : MonoBehaviour
     private void Awake()
     {
         cam = Camera.main;
-        SpawnDrone();
+    }
+
+    // 드론은 이 무기가 활성화되어 있는 동안에만 존재한다.
+    // Awake에서 스폰하면 무기 교체로 컴포넌트를 꺼도 드론이 월드에 남아 계속 동작하기 때문.
+    private void OnEnable()
+    {
+        if (drone == null)
+            SpawnDrone();
+    }
+
+    private void OnDisable()
+    {
+        if (drone != null)
+        {
+            Destroy(drone.gameObject);
+            drone = null;
+        }
     }
 
     private void SpawnDrone()

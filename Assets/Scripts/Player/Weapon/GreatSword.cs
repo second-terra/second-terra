@@ -149,6 +149,10 @@ public class GreatSword : MonoBehaviour
 
     private void OnDisable()
     {
+        // 컴포넌트를 꺼도 진행 중인 코루틴은 자동으로 멈추지 않는다.
+        // 무기를 교체한 뒤에도 분쇄·방출 등이 계속 피해를 주므로 여기서 직접 중지한다.
+        StopAllCoroutines();
+
         // 내가 등록한 훅일 때만 해제 (다른 무기가 덮어썼으면 유지)
         if (stats != null && stats.DamageInterceptor == interceptor)
             stats.DamageInterceptor = null;
