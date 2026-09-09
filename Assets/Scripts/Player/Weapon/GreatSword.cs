@@ -103,9 +103,14 @@ public class GreatSword : WeaponBase
         Color.yellow,
     };
 
-    // 평타·방어·방출·분쇄 시전 중에는 교체를 막는다.
-    // (특히 분쇄는 시전이 2초라, 도중에 바꾸면 쿨타임만 날리고 마무리 타격이 안 나간다)
-    public override bool IsBusy => isAttacking;
+    // 교체하면 이미 쓴 자원이 그냥 날아가는 구간을 막는다.
+    // - isAttacking: 시전 중 (분쇄는 2초라 도중에 바꾸면 마무리 타격이 안 나가고 쿨만 날아감)
+    // - 강화 3연격: 강화는 0타에 에너지를 통째로 소비하고 사이클 전체에 적용되므로,
+    //   1타 직후 틈에 교체하면 소비한 에너지가 2·3타에 한 번도 쓰이지 못하고 사라진다.
+    //   단 comboEnhanced는 다음 클릭 때만 해제되어서, 콤보 창이 지난 뒤에도 true로 남는다.
+    //   그대로 쓰면 강화 후 공격을 멈춘 순간 교체가 영구히 잠기므로 콤보 창까지 같이 본다.
+    public override bool IsBusy =>
+        isAttacking || (comboEnhanced && Time.time <= lastSwingTime + comboResetTime);
     public override string DisplayName => "대검";
 
     // ===== UI 노출용 (김세원님) =====

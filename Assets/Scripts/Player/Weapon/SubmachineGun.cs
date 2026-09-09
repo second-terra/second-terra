@@ -69,8 +69,10 @@ public class SubmachineGun : WeaponBase
     private float CurrentRpm => overloadActive ? overloadRpm : rpm;
     private float FireInterval => 60f / CurrentRpm;
 
-    // 시전 시간이 있는 스킬이 없어 교체를 막을 필요가 없다.
-    // 재장전 중 교체도 OnDisable에서 도탄·과부하 쿨타임을 정상 처리하므로 안전.
+    // 시전 시간이 있는 스킬이 없어 교체를 막지 않는다.
+    // 재장전 중 교체하면 진행도가 날아가 돌아왔을 때 처음부터 다시 도는데, 이건 의도한 것이다.
+    // 대검은 "이미 소비한 자원/쿨타임이 사라지는" 경우라 막고, 여기는 손해를 볼 뿐
+    // 악용할 수 없는 경우라 그냥 둔다. (도탄·과부하 쿨타임은 OnDisable에서 정상 처리)
     public override bool IsBusy => false;
     public override string DisplayName => "기관단총";
 

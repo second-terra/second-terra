@@ -76,8 +76,9 @@ public class DroneWeapon : WeaponBase
     private float savedElectrifiedRemaining;
     private bool savedDroneDead;
 
-    // 시전 시간이 있는 스킬이 없어 교체를 막을 필요가 없다.
-    // (5점사는 드론 쪽에서 돌고, 교체 시 드론이 상태와 함께 회수된다)
+    // 시전 시간이 있는 스킬이 없어 교체를 막지 않는다.
+    // 5점사 도중 교체하면 남은 탄은 사라지는데 재발사 게이트(burstTime + betweenBurst)는
+    // lastBurstTime 기준이라 그대로 걸린다. 0.8초짜리 손해고 악용할 수 없어서 그냥 둔다.
     public override bool IsBusy => false;
     public override string DisplayName => "드론";
 

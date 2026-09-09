@@ -24,6 +24,7 @@ public class WeaponManager : MonoBehaviour
     [SerializeField] private bool showDebugHUD = true;
 
     private int currentIndex = -1;
+    private int pendingDirection;   // 시전 중에 눌린 교체 입력 (0 = 없음). 씹히지 않게 버퍼링한다.
 
     public int CurrentIndex => currentIndex;
     public int WeaponCount => weapons != null ? weapons.Length : 0;
@@ -78,26 +79,48 @@ public class WeaponManager : MonoBehaviour
     {
         if (WeaponCount <= 1) return;
 
-        // 키와 휠이 같은 프레임에 겹치면 두 칸 넘어가므로, 한 프레임에 한 번만 교체한다.
-        if (Input.GetKeyDown(nextKey)) { Cycle(1); return; }
-        if (Input.GetKeyDown(prevKey)) { Cycle(-1); return; }
+        int requested = ReadSwapInput();
+        if (requested != 0)
+            pendingDirection = requested;   // 시전 중이면 기억해뒀다 풀릴 때 적용
+
+        if (pendingDirection != 0 && !IsCurrentBusy)
+        {
+            int direction = pendingDirection;
+            pendingDirection = 0;
+            Cycle(direction);
+        }
+    }
+
+    // 키와 휠을 한 곳에서 읽어 한 프레임에 한 방향만 반환한다.
+    // (따로 처리하면 키와 휠이 같은 프레임에 겹칠 때 두 칸 넘어간다)
+    private int ReadSwapInput()
+    {
+        if (Input.GetKeyDown(nextKey)) return 1;
+        if (Input.GetKeyDown(prevKey)) return -1;
 
         if (useScrollWheel)
         {
             float scroll = Input.GetAxis("Mouse ScrollWheel");
-            if (scroll > 0f) Cycle(1);
-            else if (scroll < 0f) Cycle(-1);
+            if (scroll > 0f) return 1;
+            if (scroll < 0f) return -1;
         }
+        return 0;
     }
 
-    // 지정한 무기만 켜고 나머지는 끈다. 범위를 벗어나면 아무것도 하지 않는다.
-    public void Equip(int index)
+    // 지정한 무기만 켜고 나머지는 끈다. 교체하지 못했으면 false.
+    // 가드를 Cycle이 아니라 여기에 두는 이유: 나중에 의체 선택 UI나 단축키가 붙으면
+    // 그쪽은 Cycle이 아니라 Equip을 부르게 되는데, 가드가 Cycle에만 있으면
+    // "교체를 막는 규칙"이 아니라 "휠/QE만 막는 규칙"이 되어버린다.
+    public bool Equip(int index)
     {
         if (!IsValidIndex(index))
         {
             Debug.LogWarning($"[WeaponManager] 무기 인덱스 {index}가 유효하지 않습니다. (무기 {WeaponCount}개)");
-            return;
+            return false;
         }
+
+        if (index == currentIndex) return true;
+        if (IsCurrentBusy) return false;
 
         for (int i = 0; i < weapons.Length; i++)
         {
@@ -106,14 +129,14 @@ public class WeaponManager : MonoBehaviour
         }
 
         currentIndex = index;
+        return true;
     }
 
     // 비어있는 슬롯은 건너뛰고 다음/이전 무기로 순환한다.
-    // 시전 중인 무기는 교체하지 않는다 (쿨타임만 소모하고 타격이 안 나가는 것을 막기 위해).
+    // 시전 중 차단은 Equip이 담당하므로 여기서 따로 막지 않는다.
     public void Cycle(int direction)
     {
         if (WeaponCount == 0) return;
-        if (IsCurrentBusy) return;
 
         // 아직 아무것도 장착 못 한 상태(-1)면 방향과 무관하게 첫 유효 슬롯으로 간다.
         if (currentIndex < 0)
@@ -162,7 +185,9 @@ public class WeaponManager : MonoBehaviour
         GUIStyle style = hudStyle;
 
         string name = CurrentWeapon != null ? CurrentWeapon.DisplayName : "없음";
-        string swap = IsCurrentBusy ? "시전 중 (교체 불가)" : $"{prevKey}/{nextKey} 또는 휠로 교체";
+        string swap = IsCurrentBusy
+            ? (pendingDirection != 0 ? "시전 중 (교체 예약됨)" : "시전 중 (교체 불가)")
+            : $"{prevKey}/{nextKey} 또는 휠로 교체";
         GUI.Label(new Rect(14, Screen.height - 40, 620, 30),
             $"[무기] {name}  ({currentIndex + 1}/{WeaponCount})   {swap}", style);
     }
