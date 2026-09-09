@@ -109,7 +109,7 @@ public class SubmachineGun : MonoBehaviour
         barrageRing.enabled = false;
     }
 
-    // 무기 비활성화 시 진행 중이던 코루틴이 멈추므로, 남을 수 있는 상태를 모두 원복
+    // 무기 비활성화 시 남을 수 있는 상태를 모두 원복
     private void OnDisable()
     {
         // 컴포넌트를 꺼도 진행 중인 코루틴은 자동으로 멈추지 않는다.
@@ -119,9 +119,21 @@ public class SubmachineGun : MonoBehaviour
         if (controller != null)
             controller.SpeedMultiplier = 1f;
 
+        // 도탄·과부하는 "끝날 때 쿨타임 시작" 구조라, 그냥 플래그만 내리면
+        // 무기를 교체했다 돌아오는 것만으로 쿨타임을 통째로 건너뛸 수 있다.
+        // 교체로 인한 취소도 정상 종료와 똑같이 쿨타임을 시작시킨다.
+        if (ricochetActive)
+        {
+            ricochetActive = false;
+            lastRicochetTime = Time.time;
+        }
+        if (overloadActive)
+        {
+            overloadActive = false;
+            lastOverloadTime = Time.time;
+        }
+
         barrageActive = false;
-        ricochetActive = false;
-        overloadActive = false;
         isReloading = false;   // 재장전이 중단된 채로 남아 다시 켰을 때 잠기지 않게
 
         if (barrageRing != null) barrageRing.enabled = false;

@@ -75,8 +75,9 @@ public class WeaponManager : MonoBehaviour
     {
         if (WeaponCount <= 1) return;
 
-        if (Input.GetKeyDown(nextKey)) Cycle(1);
-        else if (Input.GetKeyDown(prevKey)) Cycle(-1);
+        // 키와 휠이 같은 프레임에 겹치면 두 칸 넘어가므로, 한 프레임에 한 번만 교체한다.
+        if (Input.GetKeyDown(nextKey)) { Cycle(1); return; }
+        if (Input.GetKeyDown(prevKey)) { Cycle(-1); return; }
 
         if (useScrollWheel)
         {
@@ -109,6 +110,14 @@ public class WeaponManager : MonoBehaviour
     {
         if (WeaponCount == 0) return;
 
+        // 아직 아무것도 장착 못 한 상태(-1)면 방향과 무관하게 첫 유효 슬롯으로 간다.
+        if (currentIndex < 0)
+        {
+            int first = FindFirstValidIndex();
+            if (first >= 0) Equip(first);
+            return;
+        }
+
         for (int step = 1; step <= weapons.Length; step++)
         {
             int next = Mod(currentIndex + direction * step, weapons.Length);
@@ -133,12 +142,19 @@ public class WeaponManager : MonoBehaviour
     // C#의 %는 음수에서 음수를 반환하므로 항상 0 이상이 되도록 보정한다.
     private static int Mod(int value, int length) => ((value % length) + length) % length;
 
+    private GUIStyle hudStyle;
+
     private void OnGUI()
     {
         if (!showDebugHUD) return;
 
-        var style = new GUIStyle(GUI.skin.label) { fontSize = 18 };
-        style.normal.textColor = Color.white;
+        // OnGUI는 한 프레임에 여러 번(Layout/Repaint) 호출되므로 매번 새로 만들지 않는다.
+        if (hudStyle == null)
+        {
+            hudStyle = new GUIStyle(GUI.skin.label) { fontSize = 18 };
+            hudStyle.normal.textColor = Color.white;
+        }
+        GUIStyle style = hudStyle;
 
         string name = CurrentWeapon != null ? CurrentWeapon.GetType().Name : "없음";
         GUI.Label(new Rect(14, Screen.height - 40, 620, 30),

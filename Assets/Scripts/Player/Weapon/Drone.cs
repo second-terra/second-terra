@@ -33,6 +33,19 @@ public class Drone : MonoBehaviour
     public float CurrentHp => currentHp;
     public float HpRatio => maxHp > 0f ? currentHp / maxHp : 0f;
     public bool IsElectrified => electrified;
+    public float ElectrifiedRemaining => electrified ? Mathf.Max(0f, electrifiedUntil - Time.time) : 0f;
+
+    // 무기 교체로 드론이 회수됐다가 다시 나올 때, 이전 상태를 그대로 이어받기 위한 것.
+    // (그냥 새로 스폰하면 풀피 드론이 공짜로 생겨서 재구성 스킬을 우회하게 된다)
+    public void RestoreState(float hp, float electrifiedRemaining)
+    {
+        currentHp = Mathf.Clamp(hp, 0f, maxHp);
+
+        if (electrifiedRemaining > 0f)
+            SetElectrified(electrifiedRemaining);
+        else
+            UpdateBodyColor();
+    }
 
     public void Init(float maxHp, float moveSpeed, LayerMask hitLayers,
                      float shotDamage, float shotRange, float contactDamageToDrone, float electrifiedDamageToEnemy)
