@@ -7,7 +7,7 @@ public class WeaponManager : MonoBehaviour
 {
     [Header("무기 목록 (인스펙터 순서 = 의체 선택 순서)")]
     [Tooltip("대검 / 기관단총 / 드론 순으로 넣어주세요. 의체 선택창의 인덱스와 순서가 맞아야 합니다.")]
-    [SerializeField] private MonoBehaviour[] weapons;
+    [SerializeField] private WeaponBase[] weapons;
 
     [Header("교체 키")]
     [SerializeField] private KeyCode prevKey = KeyCode.Q;
@@ -27,8 +27,11 @@ public class WeaponManager : MonoBehaviour
 
     public int CurrentIndex => currentIndex;
     public int WeaponCount => weapons != null ? weapons.Length : 0;
-    public MonoBehaviour CurrentWeapon =>
+    public WeaponBase CurrentWeapon =>
         IsValidIndex(currentIndex) ? weapons[currentIndex] : null;
+
+    // 현재 무기가 시전 중이라 교체하면 안 되는 상태인지
+    public bool IsCurrentBusy => CurrentWeapon != null && CurrentWeapon.IsBusy;
 
     private void Awake()
     {
@@ -106,9 +109,11 @@ public class WeaponManager : MonoBehaviour
     }
 
     // 비어있는 슬롯은 건너뛰고 다음/이전 무기로 순환한다.
+    // 시전 중인 무기는 교체하지 않는다 (쿨타임만 소모하고 타격이 안 나가는 것을 막기 위해).
     public void Cycle(int direction)
     {
         if (WeaponCount == 0) return;
+        if (IsCurrentBusy) return;
 
         // 아직 아무것도 장착 못 한 상태(-1)면 방향과 무관하게 첫 유효 슬롯으로 간다.
         if (currentIndex < 0)
@@ -156,8 +161,9 @@ public class WeaponManager : MonoBehaviour
         }
         GUIStyle style = hudStyle;
 
-        string name = CurrentWeapon != null ? CurrentWeapon.GetType().Name : "없음";
+        string name = CurrentWeapon != null ? CurrentWeapon.DisplayName : "없음";
+        string swap = IsCurrentBusy ? "시전 중 (교체 불가)" : $"{prevKey}/{nextKey} 또는 휠로 교체";
         GUI.Label(new Rect(14, Screen.height - 40, 620, 30),
-            $"[무기] {name}  ({currentIndex + 1}/{WeaponCount})   {prevKey}/{nextKey} 또는 휠로 교체", style);
+            $"[무기] {name}  ({currentIndex + 1}/{WeaponCount})   {swap}", style);
     }
 }

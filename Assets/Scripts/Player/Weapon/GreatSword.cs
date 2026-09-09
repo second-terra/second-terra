@@ -5,7 +5,7 @@ using UnityEngine;
 
 // 대검. "에너지" 자원(최대 100) 운용.
 // 평타 3연격(회전이 더 강함) + 에너지 충전 + 강화(다음 행동/3연격 전체 강화) + 방어(패링) + 방출 + 분쇄.
-public class GreatSword : MonoBehaviour
+public class GreatSword : WeaponBase
 {
     [Header("참조")]
     [SerializeField] private Transform firePoint;   // 없으면 자기 자신 transform (조준 = up 방향)
@@ -102,6 +102,11 @@ public class GreatSword : MonoBehaviour
         Color.cyan,
         Color.yellow,
     };
+
+    // 평타·방어·방출·분쇄 시전 중에는 교체를 막는다.
+    // (특히 분쇄는 시전이 2초라, 도중에 바꾸면 쿨타임만 날리고 마무리 타격이 안 나간다)
+    public override bool IsBusy => isAttacking;
+    public override string DisplayName => "대검";
 
     // ===== UI 노출용 (김세원님) =====
     public float MaxEnergy => maxEnergy;

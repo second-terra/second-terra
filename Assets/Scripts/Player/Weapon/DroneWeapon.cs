@@ -4,7 +4,7 @@ using UnityEngine;
 // 드론 무기(의체) 컨트롤러. 드론 본체를 런타임 생성·관리.
 // 좌클릭: 커서 방향 5점사 / 우클릭: 커서 위치로 드론 이동.
 // 스킬: 1 드론스웜, 2 음파(둔화), 3 감전, 4 폭파+재구성.
-public class DroneWeapon : MonoBehaviour
+public class DroneWeapon : WeaponBase
 {
     [Header("참조")]
     [SerializeField] private LayerMask hitLayers;    // 적 레이어
@@ -75,6 +75,11 @@ public class DroneWeapon : MonoBehaviour
     private float savedDroneHp;
     private float savedElectrifiedRemaining;
     private bool savedDroneDead;
+
+    // 시전 시간이 있는 스킬이 없어 교체를 막을 필요가 없다.
+    // (5점사는 드론 쪽에서 돌고, 교체 시 드론이 상태와 함께 회수된다)
+    public override bool IsBusy => false;
+    public override string DisplayName => "드론";
 
     private void Awake()
     {
