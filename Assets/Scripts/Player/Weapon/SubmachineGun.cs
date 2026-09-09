@@ -4,7 +4,7 @@ using UnityEngine;
 
 // 기관단총 4정 + 기계팔. 히트스캔 원거리 무기(사정거리 있음, 선이 사정거리 지나면 소멸).
 // 사격(좌클릭) + 탄창 60발 + 재장전 + 탄막(1) + 도탄(2) + 과부하(3).
-public class SubmachineGun : MonoBehaviour
+public class SubmachineGun : WeaponBase
 {
     [Header("참조")]
     [SerializeField] private Transform firePoint;   // 없으면 자기 자신 (조준 = up = 커서 방향)
@@ -68,6 +68,13 @@ public class SubmachineGun : MonoBehaviour
     private Transform Aim => firePoint != null ? firePoint : transform;
     private float CurrentRpm => overloadActive ? overloadRpm : rpm;
     private float FireInterval => 60f / CurrentRpm;
+
+    // 시전 시간이 있는 스킬이 없어 교체를 막지 않는다.
+    // 재장전 중 교체하면 진행도가 날아가 돌아왔을 때 처음부터 다시 도는데, 이건 의도한 것이다.
+    // 대검은 "이미 소비한 자원/쿨타임이 사라지는" 경우라 막고, 여기는 손해를 볼 뿐
+    // 악용할 수 없는 경우라 그냥 둔다. (도탄·과부하 쿨타임은 OnDisable에서 정상 처리)
+    public override bool IsBusy => false;
+    public override string DisplayName => "기관단총";
 
     // UI 노출용
     public int MagSize => magSize;

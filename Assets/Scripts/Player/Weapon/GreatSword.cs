@@ -5,7 +5,7 @@ using UnityEngine;
 
 // 대검. "에너지" 자원(최대 100) 운용.
 // 평타 3연격(회전이 더 강함) + 에너지 충전 + 강화(다음 행동/3연격 전체 강화) + 방어(패링) + 방출 + 분쇄.
-public class GreatSword : MonoBehaviour
+public class GreatSword : WeaponBase
 {
     [Header("참조")]
     [SerializeField] private Transform firePoint;   // 없으면 자기 자신 transform (조준 = up 방향)
@@ -102,6 +102,16 @@ public class GreatSword : MonoBehaviour
         Color.cyan,
         Color.yellow,
     };
+
+    // 교체하면 이미 쓴 자원이 그냥 날아가는 구간을 막는다.
+    // - isAttacking: 시전 중 (분쇄는 2초라 도중에 바꾸면 마무리 타격이 안 나가고 쿨만 날아감)
+    // - 강화 3연격: 강화는 0타에 에너지를 통째로 소비하고 사이클 전체에 적용되므로,
+    //   1타 직후 틈에 교체하면 소비한 에너지가 2·3타에 한 번도 쓰이지 못하고 사라진다.
+    //   단 comboEnhanced는 다음 클릭 때만 해제되어서, 콤보 창이 지난 뒤에도 true로 남는다.
+    //   그대로 쓰면 강화 후 공격을 멈춘 순간 교체가 영구히 잠기므로 콤보 창까지 같이 본다.
+    public override bool IsBusy =>
+        isAttacking || (comboEnhanced && Time.time <= lastSwingTime + comboResetTime);
+    public override string DisplayName => "대검";
 
     // ===== UI 노출용 (김세원님) =====
     public float MaxEnergy => maxEnergy;
