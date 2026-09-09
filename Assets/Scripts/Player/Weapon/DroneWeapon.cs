@@ -70,18 +70,62 @@ public class DroneWeapon : MonoBehaviour
     private float lastReconstructTime = -999f;
     private Camera cam;
 
+    // 무기 교체로 드론을 회수할 때 보관해두는 상태. 교체가 무료 부활이 되지 않게 한다.
+    private bool hasSavedDrone;
+    private float savedDroneHp;
+    private float savedElectrifiedRemaining;
+    private bool savedDroneDead;
+
     private void Awake()
     {
         cam = Camera.main;
-        SpawnDrone();
     }
 
-    private void SpawnDrone()
+    // 드론은 이 무기가 활성화되어 있는 동안에만 존재한다.
+    // Awake에서 스폰하면 무기 교체로 컴포넌트를 꺼도 드론이 월드에 남아 계속 동작하기 때문.
+    private void OnEnable()
+    {
+        // 죽은 채로 교체했다면 되살리지 않는다. 부활은 4키 재구성으로만 (쿨타임 있음).
+        if (savedDroneDead) return;
+
+        if (drone == null)
+            SpawnDrone();
+    }
+
+    private void OnDisable()
+    {
+        if (drone == null) return;
+
+        // 체력·감전 상태를 보관했다가 돌아올 때 그대로 복원한다.
+        hasSavedDrone = true;
+        savedDroneHp = drone.CurrentHp;
+        savedElectrifiedRemaining = drone.ElectrifiedRemaining;
+        savedDroneDead = !drone.IsAlive;
+
+        Destroy(drone.gameObject);
+        drone = null;
+    }
+
+    // restoreSaved=false면 항상 새 드론(재구성 스킬처럼 완전 부활).
+    private void SpawnDrone(bool restoreSaved = true)
     {
         var go = new GameObject("Drone");
         go.transform.position = (Vector2)transform.position + droneSpawnOffset;
         drone = go.AddComponent<Drone>();
         drone.Init(droneHp, droneMoveSpeed, hitLayers, shotDamage, shotRange, droneContactDamage, electrifiedDamageToEnemy);
+
+        if (restoreSaved && hasSavedDrone)
+            drone.RestoreState(savedDroneHp, savedElectrifiedRemaining);
+
+        ClearSavedDrone();
+    }
+
+    private void ClearSavedDrone()
+    {
+        hasSavedDrone = false;
+        savedDroneDead = false;
+        savedDroneHp = 0f;
+        savedElectrifiedRemaining = 0f;
     }
 
     private void Update()
@@ -119,6 +163,8 @@ public class DroneWeapon : MonoBehaviour
     }
 
     // 드론 스웜: 초소형 드론 N개 사출 → 각자 가장 가까운 적에게 날아가 자폭
+    // 사출된 스웜은 발사체로 취급해서 무기를 교체해도 회수하지 않는다 (swarmLife 후 자연 소멸).
+    // 본체 드론만 무기 수명을 따르는 이유는, 본체는 계속 조작·유지되는 소환물이기 때문.
     private void TrySwarm()
     {
         if (Time.time < lastSwarmTime + swarmCooldown)
@@ -182,8 +228,8 @@ public class DroneWeapon : MonoBehaviour
         }
         if (drone != null) Destroy(drone.gameObject);
 
-        // 재소환 + 기본 감전
-        SpawnDrone();
+        // 재소환 + 기본 감전. 재구성은 완전 부활이므로 교체용 보관 상태를 쓰지 않는다.
+        SpawnDrone(restoreSaved: false);
         drone.SetElectrified(reconstructElectrifyDuration);
     }
 
