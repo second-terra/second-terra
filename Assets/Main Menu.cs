@@ -1,31 +1,31 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class MainMenu : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
+    [Tooltip("메인메뉴 캔버스 안의 옵션 패널. 시작할 때 자동으로 닫아둔다.")]
+    [SerializeField] private GameObject optionsPanel;
 
-    // Update is called once per frame
-    void Update()
+    private void Start()
     {
-        
+        if (optionsPanel != null)
+            optionsPanel.SetActive(false);
     }
 
     public void OnClickStartGame()
     {
-        Debug.Log("Start Game");
         SceneManager.LoadScene("GameScene");
     }
 
     public void OnClickOptions()
     {
-        Debug.Log("Option");
+        if (optionsPanel == null)
+        {
+            Debug.LogWarning("[MainMenu] OptionsPanel이 연결되지 않았습니다. 인스펙터에서 연결해주세요.");
+            return;
+        }
+
+        optionsPanel.SetActive(true);
     }
 
     public void OnClickExit()
