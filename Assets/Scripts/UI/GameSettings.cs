@@ -95,12 +95,20 @@ public static class GameSettings
 
         AudioListener.volume = master;
 
-        if (PlayerPrefs.HasKey(FullscreenKey))
-            Screen.fullScreen = PlayerPrefs.GetInt(FullscreenKey) == 1;
+        // Screen.fullScreen 은 대입해도 현재 프레임이 끝날 때 반영되므로, 곧바로 다시 읽으면
+        // 아직 이전 모드가 나온다. 그래서 SetResolution 에 Screen.fullScreen 을 넘기면
+        // 방금 요청한 창 모드가 이전 모드로 덮어써진다. 저장값을 변수에 담아 직접 넘긴다.
+        bool fullscreen = PlayerPrefs.HasKey(FullscreenKey)
+            ? PlayerPrefs.GetInt(FullscreenKey) == 1
+            : Screen.fullScreen;
 
         int width  = PlayerPrefs.GetInt(ResWidthKey, 0);
         int height = PlayerPrefs.GetInt(ResHeightKey, 0);
+
+        // 해상도 저장값이 있으면 창 모드까지 한 번에 적용하고, 없으면 창 모드만 적용한다.
         if (width > 0 && height > 0)
-            Screen.SetResolution(width, height, Screen.fullScreen);
+            Screen.SetResolution(width, height, fullscreen);
+        else
+            Screen.fullScreen = fullscreen;
     }
 }
